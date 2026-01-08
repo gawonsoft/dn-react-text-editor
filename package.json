@@ -1,6 +1,6 @@
 {
   "name": "dn-react-text-editor",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.mjs",
   "module": "./dist/index.js",
@@ -44,6 +44,8 @@
     "react-dom": "^19"
   },
   "dependencies": {
+    "highlight.js": "^11.11.1",
+    "html-entities": "^2.6.0",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-history": "^1.5.0",
     "prosemirror-keymap": "^1.2.3",

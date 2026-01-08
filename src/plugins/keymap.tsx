@@ -1,4 +1,4 @@
-import type { Command } from "prosemirror-state";
+import { TextSelection, type Command } from "prosemirror-state";
 import { undo, redo } from "prosemirror-history";
 import { chainCommands, splitBlockAs } from "prosemirror-commands";
 import type { Schema } from "prosemirror-model";
@@ -41,6 +41,32 @@ export function buildKeymap(schema: Schema) {
       return false;
     })
   );
+
+  bind("ArrowDown", (state, dispatch) => {
+    const doc = state.doc;
+
+    const lastNode = doc.lastChild;
+
+    if (lastNode && lastNode.type.name !== "paragraph") {
+      const paragraphType = state.schema.nodes.paragraph;
+
+      let tr = state.tr;
+
+      const endPos = doc.content.size;
+
+      tr = tr.insert(endPos, paragraphType.create());
+
+      tr = tr.setSelection(TextSelection.create(tr.doc, tr.doc.content.size));
+
+      if (dispatch) {
+        dispatch(tr);
+      }
+
+      return true;
+    }
+
+    return false;
+  });
 
   return keys;
 }

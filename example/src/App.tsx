@@ -1,25 +1,32 @@
 import {
+  createInnerHTML,
   createTextEditor,
   type TextEditorController,
 } from "dn-react-text-editor";
 import { useRef } from "react";
+import "highlight.js/styles/github.css";
 
-const { attachFile, Component: TextEditor } = createTextEditor();
+const TextEditor = createTextEditor();
 
 export default function App() {
   const ref = useRef<TextEditorController>(null);
 
+  const previewRef = useRef<HTMLDivElement>(null);
+
   return (
     <div>
       <Toolbar textEditorRef={ref} />
-      <TextEditor
-        ref={ref}
-        className="text-editor"
-        placeholder="Write something..."
-        onChange={(e) => {
-          console.log(e.target.value);
-        }}
-      />
+      <div className="app">
+        <TextEditor
+          ref={ref}
+          className="text-editor"
+          placeholder="Write something..."
+          onChange={(e) => {
+            previewRef.current!.innerHTML = createInnerHTML(e.target.value);
+          }}
+        />
+        <div ref={previewRef} className="preview" />
+      </div>
     </div>
   );
 }
@@ -36,10 +43,28 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          textEditorRef.current?.clear();
+          textEditorRef.current?.commands.clear();
         }}
       >
         Clear
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!textEditorRef.current) {
+            return;
+          }
+
+          const href = prompt("Enter URL", "https://");
+
+          if (!href) {
+            return;
+          }
+
+          textEditorRef.current.commands.toggleMark("link", { href });
+        }}
+      >
+        Link
       </button>
       <button type="button" onClick={() => inputRef.current?.click()}>
         Attach File
@@ -54,14 +79,60 @@ function Toolbar({
 
           const files = Array.from(e.target.files || []);
 
-          attachFile(textEditorRef.current.view, files).then(() => {
-            e.target.value = "";
-          });
+          textEditorRef.current.commands.attachFile(files);
         }}
         style={{
           display: "none",
         }}
       />
+      <button
+        type="button"
+        onClick={() => {
+          if (!textEditorRef.current) {
+            return;
+          }
+
+          textEditorRef.current.commands.setBlockType("heading", { level: 1 });
+        }}
+      >
+        H1
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!textEditorRef.current) {
+            return;
+          }
+
+          textEditorRef.current.commands.wrapInList("ordered_list");
+        }}
+      >
+        Ordered List
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!textEditorRef.current) {
+            return;
+          }
+
+          textEditorRef.current.commands.wrapInList("bullet_list");
+        }}
+      >
+        Bullet List
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          if (!textEditorRef.current) {
+            return;
+          }
+
+          textEditorRef.current.commands.setBlockType("code_block");
+        }}
+      >
+        Code Block
+      </button>
     </div>
   );
 }

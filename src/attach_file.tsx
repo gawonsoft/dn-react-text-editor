@@ -4,47 +4,36 @@ import {
   uploadPlaceholderPlugin,
 } from "./plugins/upload_placeholder";
 import { createSchema } from "./schema";
+import { base64FileUploader } from "./base64_file_uploader";
+
+export type GenerateMetadata = (file: File) =>
+  | Promise<{
+      width?: number;
+      height?: number;
+      poster?: string;
+    }>
+  | {
+      width?: number;
+      height?: number;
+      poster?: string;
+    };
+
+export type UploadFile = (
+  file: File
+) => Promise<{ src: string; alt?: string }> | { src: string; alt?: string };
+
+export type AttachFileOptions = {
+  schema: ReturnType<typeof createSchema>;
+  generateMetadata?: GenerateMetadata;
+  uploadFile?: UploadFile;
+};
 
 export type AttachFile = (view: EditorView, files: File[]) => Promise<void>;
-
-type AttachFileOptions = {
-  schema: ReturnType<typeof createSchema>;
-  generateMetadata?: (file: File) =>
-    | Promise<{
-        width?: number;
-        height?: number;
-        poster?: string;
-      }>
-    | {
-        width?: number;
-        height?: number;
-        poster?: string;
-      };
-  uploadFile?: (
-    file: File
-  ) => Promise<{ src: string; alt?: string }> | { src: string; alt?: string };
-};
-
-export const base64ImageUploader = async (file: File) => {
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve(reader.result as string);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-  return {
-    src: base64,
-    alt: file.name,
-  };
-};
 
 export function createAttachFile({
   schema,
   generateMetadata,
-  uploadFile = base64ImageUploader,
+  uploadFile = base64FileUploader,
 }: AttachFileOptions): AttachFile {
   const attachEachFile = async (view: EditorView, file: File, pos?: number) => {
     const metadata = generateMetadata ? await generateMetadata(file) : {};

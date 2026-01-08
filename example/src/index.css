@@ -6,9 +6,17 @@ p {
   margin: 0;
 }
 
+.app {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 .text-editor {
-  margin-top: 8px;
+  flex: 1;
   border: 1px solid #ccc;
+  min-height: 100px;
+  display: flex;
 }
 
 .text-editor[data-placeholder]::before {
@@ -17,6 +25,11 @@ p {
   pointer-events: none;
   float: left;
   height: 0;
+}
+
+.preview {
+  flex: 1;
+  border: 1px solid #ccc;
 }
 
 .toolbar {
