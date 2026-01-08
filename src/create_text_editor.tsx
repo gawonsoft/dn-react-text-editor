@@ -58,7 +58,7 @@ export function createTextEditor(
 
     const controllerRef = useRef<TextEditorController | null>(null);
 
-    useImperativeHandle(ref, () => {
+    useImperativeHandle(ref || controllerRef, () => {
       const container = containerRef.current!;
 
       const textEditorController = createTextEditorController(
@@ -81,14 +81,8 @@ export function createTextEditor(
     });
 
     useEffect(() => {
-      const controller = controllerRef.current;
-
-      if (!controller) {
-        return;
-      }
-
       if (autoFocus) {
-        controller.view.focus();
+        controllerRef.current?.view.focus();
       }
     }, []);
 

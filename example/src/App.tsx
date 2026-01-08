@@ -18,7 +18,6 @@ export default function App() {
       <Toolbar textEditorRef={ref} />
       <div className="app">
         <TextEditor
-          ref={ref}
           className="text-editor"
           placeholder="Write something..."
           onChange={(e) => {
