@@ -1,4 +1,6 @@
 import React, {
+  useImperativeHandle,
+  useMemo,
   type DetailedHTMLProps,
   type InputHTMLAttributes,
   type Ref,
@@ -87,15 +89,11 @@ export function createTextEditor(
 
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-      const element = containerRef.current;
+    const controllerRef = useRef<TextEditorController | null>(null);
 
-      if (!element) {
-        return;
-      }
+    const subject = useMemo(() => new Subject<Transaction>(), []);
 
-      const subject = new Subject<Transaction>();
-
+    useImperativeHandle(ref, () => {
       const wrapper = document.createElement("div");
 
       const toInnerHTML = (value: string) => {
@@ -111,7 +109,7 @@ export function createTextEditor(
 
       wrapper.innerHTML = toInnerHTML(defaultValue ? String(defaultValue) : "");
 
-      const view = new EditorView(element, {
+      const view = new EditorView(containerRef.current!, {
         ...editor,
         attributes: (state) => {
           const propsAttributes = (() => {
@@ -207,28 +205,6 @@ export function createTextEditor(
         return state.doc.textBetween(0, state.doc.content.size, "\n");
       }
 
-      const sub = subject
-        .pipe(
-          filter((tr) => tr.docChanged),
-          debounceTime(updateDelay)
-        )
-        .subscribe(() => {
-          if (inputRef.current) {
-            switch (mode) {
-              case "text":
-                inputRef.current.value = toTextContent();
-                break;
-              default:
-                inputRef.current.value = toHTML();
-                break;
-            }
-
-            const event = new Event("input", { bubbles: true });
-
-            inputRef.current.dispatchEvent(event);
-          }
-        });
-
       if (autoFocus) {
         view.focus();
       }
@@ -251,18 +227,41 @@ export function createTextEditor(
         clear,
       };
 
-      if (typeof ref === "function") {
-        ref(textEditorController);
-      } else if (ref) {
-        ref.current = textEditorController;
+      controllerRef.current = textEditorController;
+
+      return textEditorController;
+    });
+
+    useEffect(() => {
+      const controller = controllerRef.current;
+
+      if (!controller) {
+        return;
+      }
+
+      const sub = controller.subject
+        .pipe(
+          filter((tr) => tr.docChanged),
+          debounceTime(updateDelay)
+        )
+        .subscribe(() => {
+          if (inputRef.current) {
+            inputRef.current.value = controller.value;
+
+            const event = new Event("input", { bubbles: true });
+
+            inputRef.current.dispatchEvent(event);
+          }
+        });
+
+      if (autoFocus) {
+        controller.view.focus();
       }
 
       return () => {
         sub.unsubscribe();
 
-        view.destroy();
-
-        element.innerHTML = "";
+        controller.view.destroy();
       };
     }, []);
 
