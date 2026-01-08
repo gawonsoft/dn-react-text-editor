@@ -45,7 +45,7 @@ export function createTextEditorController(
   schema: Schema,
   options: CreateTextEditorOptions,
   {
-    mode,
+    mode = "html",
     state,
     editor,
     defaultValue,
@@ -62,14 +62,14 @@ export function createTextEditorController(
   const wrapper = document.createElement("div");
 
   const toInnerHTML = (value: string) => {
-    if (mode === "html") {
-      return value;
+    if (mode === "text") {
+      return value
+        .split("\n")
+        .map((line) => `<p>${line}</p>`)
+        .join("");
     }
 
-    return value
-      .split("\n")
-      .map((line) => `<p>${line}</p>`)
-      .join("");
+    return value;
   };
 
   wrapper.innerHTML = toInnerHTML(defaultValue ? String(defaultValue) : "");

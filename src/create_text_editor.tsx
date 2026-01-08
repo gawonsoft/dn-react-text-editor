@@ -1,6 +1,7 @@
 import React, {
   useImperativeHandle,
   type DetailedHTMLProps,
+  type FC,
   type InputHTMLAttributes,
   type Ref,
 } from "react";
@@ -35,17 +36,22 @@ export type TextEditorProps = Omit<HTMLElementProps, "ref"> & {
   name?: string;
 } & TextEditorControllerProps;
 
-export function createTextEditor(options: CreateTextEditorOptions = {}) {
+export function createTextEditor(
+  options: CreateTextEditorOptions = {}
+): FC<TextEditorProps> {
   const schema = createSchema();
 
   function Component({
     ref,
     className,
     autoFocus,
-    placeholder,
-    defaultValue,
     onChange,
+    mode,
+    state,
+    editor,
+    defaultValue,
     updateDelay,
+    placeholder,
     ...props
   }: TextEditorProps = {}) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +65,14 @@ export function createTextEditor(options: CreateTextEditorOptions = {}) {
         container,
         schema,
         options,
-        props
+        {
+          mode,
+          state,
+          editor,
+          defaultValue,
+          updateDelay,
+          placeholder,
+        }
       );
 
       controllerRef.current = textEditorController;
@@ -85,6 +98,7 @@ export function createTextEditor(options: CreateTextEditorOptions = {}) {
         <TextEditorInput
           ref={controllerRef}
           updateDelay={updateDelay}
+          defaultValue={defaultValue}
           onChange={onChange}
         />
       </>
