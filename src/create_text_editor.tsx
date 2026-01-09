@@ -58,32 +58,42 @@ export function createTextEditor(
 
     const controllerRef = useRef<TextEditorController | null>(null);
 
-    useImperativeHandle(ref || controllerRef, () => {
-      const container = containerRef.current!;
+    useImperativeHandle(
+      ref || controllerRef,
+      () => {
+        const container = containerRef.current!;
 
-      const textEditorController = createTextEditorController(
-        container,
-        schema,
-        options,
-        {
-          mode,
-          state,
-          editor,
-          defaultValue,
-          updateDelay,
-          placeholder,
-        }
-      );
+        const textEditorController = createTextEditorController(
+          container,
+          schema,
+          options,
+          {
+            mode,
+            state,
+            editor,
+            defaultValue,
+            updateDelay,
+            placeholder,
+          }
+        );
 
-      controllerRef.current = textEditorController;
+        controllerRef.current = textEditorController;
 
-      return textEditorController;
-    });
+        return textEditorController;
+      },
+      []
+    );
 
     useEffect(() => {
       if (autoFocus) {
         controllerRef.current?.view.focus();
       }
+
+      return () => {
+        console.log(controllerRef.current);
+
+        controllerRef.current?.view.destroy();
+      };
     }, []);
 
     return (

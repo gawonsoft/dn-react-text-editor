@@ -3,7 +3,7 @@ import {
   createTextEditor,
   type TextEditorController,
 } from "dn-react-text-editor";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import "highlight.js/styles/github.css";
 
 const TextEditor = createTextEditor();
@@ -13,8 +13,13 @@ export default function App() {
 
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const [state, setState] = useState(false);
+
   return (
     <div>
+      <button type="button" onClick={() => setState(!state)}>
+        Toggle State ({state ? "true" : "false"})
+      </button>
       <Toolbar textEditorRef={ref} />
       <div className="app">
         <TextEditor
