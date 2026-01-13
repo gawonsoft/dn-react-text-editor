@@ -38,6 +38,20 @@ function Toolbar({ controller }: { controller: TextEditorController }) {
       <button
         type="button"
         onClick={() => {
+          alert("Submitted value:" + controller.value);
+        }}
+      >
+        Submit
+      </button>
+      <button type="button" onClick={() => controller.commands.undo()}>
+        Undo
+      </button>
+      <button type="button" onClick={() => controller.commands.redo()}>
+        Redo
+      </button>
+      <button
+        type="button"
+        onClick={() => {
           controller.commands.clear();
         }}
       >

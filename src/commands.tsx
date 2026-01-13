@@ -3,6 +3,7 @@ import type { EditorView } from "prosemirror-view";
 import * as commands from "prosemirror-commands";
 import * as schemaList from "prosemirror-schema-list";
 import type { AttachFile } from "./attach_file";
+import * as history from "prosemirror-history";
 
 export const createCommands = (
   schema: Schema,
@@ -107,6 +108,18 @@ export const createCommands = (
       view.dispatch(tr);
     };
 
+    const undo = () => {
+      view.focus();
+
+      history.undo(view.state, view.dispatch);
+    };
+
+    const redo = () => {
+      view.focus();
+
+      history.redo(view.state, view.dispatch);
+    };
+
     return {
       isBlockTypeActive,
       setBlockType,
@@ -114,6 +127,8 @@ export const createCommands = (
       toggleMark,
       wrapInList,
       clear,
+      undo,
+      redo,
       attachFile: (files: File[]) => {
         options.attachFile?.(view, files);
       },
