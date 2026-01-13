@@ -21,15 +21,7 @@ import {
 import { createCommands } from "./commands";
 import { DOMParser, DOMSerializer, type Schema } from "prosemirror-model";
 import { Subject } from "rxjs";
-
-export type TextEditorControllerProps = {
-  mode?: "html" | "text";
-  state?: Partial<EditorStateConfig>;
-  editor?: Partial<DirectEditorProps>;
-  defaultValue?: string | readonly string[] | number;
-  updateDelay?: number;
-  placeholder?: string;
-};
+import { createSchema } from "./schema";
 
 export type CreateTextEditorOptions = {
   className?: string;
@@ -40,29 +32,74 @@ export type CreateTextEditorOptions = {
   };
 };
 
-export function createTextEditorController(
-  container: HTMLElement,
-  schema: Schema,
-  options: CreateTextEditorOptions,
-  {
-    mode = "html",
-    state,
-    editor,
-    defaultValue,
-    updateDelay = 500,
-    placeholder,
-  }: TextEditorControllerProps
-) {
-  const subject = new Subject<Transaction>();
+export type TextEditorControllerProps = {
+  mode?: "html" | "text";
+  state?: Partial<EditorStateConfig>;
+  editor?: Partial<DirectEditorProps>;
+  defaultValue?: string | readonly string[] | number;
+  updateDelay?: number;
+  placeholder?: string;
+  autoFocus?: boolean;
+};
 
-  const prosemirrorParser = DOMParser.fromSchema(schema);
+export class TextEditorController {
+  schema: Schema;
 
-  const prosemirrorSerializer = DOMSerializer.fromSchema(schema);
+  options: CreateTextEditorOptions;
 
-  const wrapper = document.createElement("div");
+  props: TextEditorControllerProps;
 
-  const toInnerHTML = (value: string) => {
-    if (mode === "text") {
+  subject: Subject<Transaction>;
+
+  view?: EditorView;
+
+  prosemirrorParser: DOMParser;
+
+  prosemirrorSerializer: DOMSerializer;
+
+  get value(): string {
+    if (this.props.mode === "text") {
+      return this.toTextContent();
+    }
+
+    return this.toHTML();
+  }
+
+  set value(value: string) {
+    const wrap = document.createElement("div");
+
+    wrap.innerHTML = this.toInnerHTML(value);
+
+    const doc = this.prosemirrorParser.parse(wrap);
+
+    const tr = this.view!.state.tr.replaceWith(
+      0,
+      this.view!.state.doc.content.size,
+      doc.content
+    );
+
+    this.view!.dispatch(tr);
+  }
+
+  constructor(
+    options: CreateTextEditorOptions = {},
+    props: TextEditorControllerProps = {}
+  ) {
+    this.schema = createSchema();
+
+    this.options = options;
+
+    this.props = props;
+
+    this.subject = new Subject<Transaction>();
+
+    this.prosemirrorParser = DOMParser.fromSchema(this.schema);
+
+    this.prosemirrorSerializer = DOMSerializer.fromSchema(this.schema);
+  }
+
+  toInnerHTML(value: string) {
+    if (this.props.mode === "text") {
       return value
         .split("\n")
         .map((line) => `<p>${line}</p>`)
@@ -70,86 +107,84 @@ export function createTextEditorController(
     }
 
     return value;
-  };
-
-  wrapper.innerHTML = toInnerHTML(defaultValue ? String(defaultValue) : "");
-
-  const attachFile = createAttachFile({
-    schema,
-    generateMetadata: options.attachFile?.generateMetadata,
-    uploadFile: options.attachFile?.uploadFile,
-  });
-
-  const view = new EditorView(container, {
-    ...editor,
-    attributes: (state) => {
-      const propsAttributes = (() => {
-        if (typeof editor?.attributes === "function") {
-          return editor.attributes(state);
-        }
-
-        return editor?.attributes;
-      })();
-
-      return {
-        ...propsAttributes,
-        class: cn(options?.className, propsAttributes?.class),
-        spellcheck: propsAttributes?.spellcheck || "false",
-        style: options.style || "width: 100%; height: inherit; outline: none;",
-      };
-    },
-    state: EditorState.create({
-      ...state,
-      schema: state?.schema || schema,
-      doc: state?.doc || prosemirrorParser.parse(wrapper),
-      plugins: [
-        ...(state?.plugins || []),
-        history({
-          newGroupDelay: updateDelay,
-        }),
-        keymap(buildKeymap(schema)),
-        keymap(commands.baseKeymap),
-        uploadPlaceholderPlugin,
-        dragAndDropPlugin({
-          attachFile,
-        }),
-        placeholder && placeholderPlugin(placeholder),
-      ].filter((e): e is Plugin => !!(e as Plugin)),
-    }),
-    dispatchTransaction(tr) {
-      let result;
-
-      if (editor?.dispatchTransaction) {
-        result = editor.dispatchTransaction(tr);
-      } else {
-        view.updateState(view.state.apply(tr));
-      }
-
-      subject.next(tr);
-
-      return result;
-    },
-  });
-
-  function setValue(value: string) {
-    const wrap = document.createElement("div");
-
-    wrap.innerHTML = toInnerHTML(value);
-
-    const doc = prosemirrorParser.parse(wrap);
-
-    const tr = view.state.tr.replaceWith(
-      0,
-      view.state.doc.content.size,
-      doc.content
-    );
-
-    view.dispatch(tr);
   }
 
-  function toHTML(): string {
-    const fragment = prosemirrorSerializer.serializeFragment(
-      view.state.doc.content
+  attachFile(files: File[]) {
+    return createAttachFile({
+      schema: this.schema,
+      generateMetadata: this.options.attachFile?.generateMetadata,
+      uploadFile: this.options.attachFile?.uploadFile,
+    })(this.view!, files);
+  }
+
+  bind(container: HTMLElement) {
+    const wrapper = document.createElement("div");
+
+    wrapper.innerHTML = this.toInnerHTML(
+      this.props.defaultValue ? String(this.props.defaultValue) : ""
+    );
+
+    this.view = new EditorView(container, {
+      ...this.props.editor,
+      attributes: (state) => {
+        const propsAttributes = (() => {
+          if (typeof this.props.editor?.attributes === "function") {
+            return this.props.editor.attributes(state);
+          }
+
+          return this.props.editor?.attributes;
+        })();
+
+        return {
+          ...propsAttributes,
+          class: cn(this.options?.className, propsAttributes?.class),
+          spellcheck: propsAttributes?.spellcheck || "false",
+          style:
+            this.options.style ||
+            "width: 100%; height: inherit; outline: none;",
+        };
+      },
+      state: EditorState.create({
+        ...this.props.state,
+        schema: this.props.state?.schema || this.schema,
+        doc: this.props.state?.doc || this.prosemirrorParser.parse(wrapper),
+        plugins: [
+          ...(this.props.state?.plugins || []),
+          history({
+            newGroupDelay: this.props.updateDelay,
+          }),
+          keymap(buildKeymap(this.schema)),
+          keymap(commands.baseKeymap),
+          uploadPlaceholderPlugin,
+          dragAndDropPlugin({
+            attachFile: (view, files: File[]) => this.attachFile(files),
+          }),
+          this.props.placeholder && placeholderPlugin(this.props.placeholder),
+        ].filter((e): e is Plugin => !!(e as Plugin)),
+      }),
+      dispatchTransaction: (tr) => {
+        let result;
+
+        if (this.props.editor?.dispatchTransaction) {
+          result = this.props.editor.dispatchTransaction(tr);
+        } else {
+          this.view?.updateState(this.view.state.apply(tr));
+        }
+
+        this.subject.next(tr);
+
+        return result;
+      },
+    });
+
+    if (this.props.autoFocus) {
+      this.view?.focus();
+    }
+  }
+
+  toHTML(): string {
+    const fragment = this.prosemirrorSerializer.serializeFragment(
+      this.view!.state.doc.content
     );
 
     const container = document.createElement("div");
@@ -159,33 +194,19 @@ export function createTextEditorController(
     return container.innerHTML;
   }
 
-  function toTextContent(): string {
-    const state = view.state;
+  toTextContent(): string {
+    const state = this.view!.state;
 
     return state.doc.textBetween(0, state.doc.content.size, "\n");
   }
 
-  const textEditorCommands = createCommands(schema, view, {
-    attachFile,
-  });
+  get commands() {
+    return createCommands(this.schema, this.view!, {
+      attachFile: (view, files: File[]) => this.attachFile(files),
+    });
+  }
 
-  const textEditorController = {
-    schema,
-    view,
-    subject,
-    set value(value: string) {
-      setValue(value);
-    },
-    get value(): string {
-      switch (mode) {
-        case "text":
-          return toTextContent();
-        default:
-          return toHTML();
-      }
-    },
-    commands: textEditorCommands,
-  };
-
-  return textEditorController;
+  dispose() {
+    this.view?.destroy();
+  }
 }

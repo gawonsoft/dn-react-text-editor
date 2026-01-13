@@ -2,23 +2,22 @@ import React, {
   useEffect,
   type DetailedHTMLProps,
   type HTMLAttributes,
-  type RefObject,
 } from "react";
-import type { TextEditorController } from "./create_text_editor";
 import { debounceTime, filter } from "rxjs";
+import type { TextEditorController } from "./text_editor_controller";
 
 type Props = Omit<
   DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>,
   "ref"
 > & {
-  ref: RefObject<TextEditorController | null>;
+  controller: TextEditorController;
   updateDelay?: number;
   name?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
 export function TextEditorInput({
-  ref,
+  controller,
   onChange,
   updateDelay = 0,
   ...props
@@ -26,12 +25,6 @@ export function TextEditorInput({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const controller = ref.current;
-
-    if (!controller) {
-      return;
-    }
-
     const sub = controller.subject
       .pipe(
         filter((tr) => tr.docChanged),
@@ -49,8 +42,6 @@ export function TextEditorInput({
 
     return () => {
       sub.unsubscribe();
-
-      controller.view.destroy();
     };
   }, []);
 

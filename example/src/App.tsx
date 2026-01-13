@@ -1,29 +1,24 @@
 import {
   createInnerHTML,
   createTextEditor,
-  type TextEditorController,
+  TextEditorController,
 } from "dn-react-text-editor";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import "highlight.js/styles/github.css";
 
 const TextEditor = createTextEditor();
 
 export default function App() {
-  const ref = useRef<TextEditorController>(null);
+  const controller = new TextEditorController();
 
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const [state, setState] = useState(false);
-
   return (
     <div>
-      <button type="button" onClick={() => setState(!state)}>
-        Toggle State ({state ? "true" : "false"})
-      </button>
-      <Toolbar textEditorRef={ref} />
+      <Toolbar controller={controller} />
       <div className="app">
         <TextEditor
-          ref={ref}
+          controller={controller}
           className="text-editor"
           placeholder="Write something..."
           onChange={(e) => {
@@ -36,11 +31,7 @@ export default function App() {
   );
 }
 
-function Toolbar({
-  textEditorRef,
-}: {
-  textEditorRef: React.RefObject<TextEditorController | null>;
-}) {
+function Toolbar({ controller }: { controller: TextEditorController }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -48,7 +39,7 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          textEditorRef.current?.commands.clear();
+          controller.commands.clear();
         }}
       >
         Clear
@@ -56,17 +47,13 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
           const href = prompt("Enter URL", "https://");
 
           if (!href) {
             return;
           }
 
-          textEditorRef.current.commands.toggleMark("link", { href });
+          controller.commands.toggleMark("link", { href });
         }}
       >
         Link
@@ -78,13 +65,9 @@ function Toolbar({
         ref={inputRef}
         type="file"
         onChange={(e) => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
           const files = Array.from(e.target.files || []);
 
-          textEditorRef.current.commands.attachFile(files);
+          controller.commands.attachFile(files);
         }}
         style={{
           display: "none",
@@ -93,11 +76,7 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
-          textEditorRef.current.commands.setBlockType("heading", { level: 1 });
+          controller.commands.setBlockType("heading", { level: 1 });
         }}
       >
         H1
@@ -105,11 +84,7 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
-          textEditorRef.current.commands.wrapInList("ordered_list");
+          controller.commands.wrapInList("ordered_list");
         }}
       >
         Ordered List
@@ -117,11 +92,7 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
-          textEditorRef.current.commands.wrapInList("bullet_list");
+          controller.commands.wrapInList("bullet_list");
         }}
       >
         Bullet List
@@ -129,11 +100,7 @@ function Toolbar({
       <button
         type="button"
         onClick={() => {
-          if (!textEditorRef.current) {
-            return;
-          }
-
-          textEditorRef.current.commands.setBlockType("code_block");
+          controller.commands.setBlockType("code_block");
         }}
       >
         Code Block
