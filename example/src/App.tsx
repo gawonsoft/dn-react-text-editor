@@ -1,12 +1,10 @@
 import {
   createInnerHTML,
-  createTextEditor,
+  TextEditor,
   TextEditorController,
 } from "dn-react-text-editor";
 import { useRef } from "react";
 import "highlight.js/styles/github.css";
-
-const TextEditor = createTextEditor();
 
 export default function App() {
   const controller = new TextEditorController({

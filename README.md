@@ -7,8 +7,6 @@ A rich text editor component for React built on ProseMirror.
 ```tsx
 import { TextEditor } from "dn-react-text-editor";
 
-const TextEditor = useTextEditor();
-
 function App() {
   return (
     <TextEditor

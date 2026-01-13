@@ -129,7 +129,7 @@ export class TextEditorController {
 
         return {
           ...propsAttributes,
-          class: cn(this.props?.className, propsAttributes?.class),
+          class: cn(this.props.className, propsAttributes?.class),
           spellcheck: propsAttributes?.spellcheck || "false",
           style:
             this.props.style || "width: 100%; height: inherit; outline: none;",
@@ -206,3 +206,20 @@ export class TextEditorController {
     this.view?.destroy();
   }
 }
+
+export type ConfigTextEditorOptions = Pick<
+  TextEditorControllerProps,
+  "className" | "style" | "attachFile"
+>;
+
+export const configTextEditorController = (
+  options: ConfigTextEditorOptions = {}
+) => {
+  return (props: TextEditorControllerProps) =>
+    new TextEditorController({
+      ...props,
+      className: props.className || options.className,
+      style: props.style || options.style,
+      attachFile: props.attachFile || options.attachFile,
+    });
+};
