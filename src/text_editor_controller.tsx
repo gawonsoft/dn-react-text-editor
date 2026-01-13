@@ -213,7 +213,7 @@ export type ConfigTextEditorOptions = Pick<
 >;
 
 export const configTextEditorController = (
-  options: ConfigTextEditorOptions = {}
+  options: ConfigTextEditorOptions = ({} = {})
 ) => {
   return (props: TextEditorControllerProps) =>
     new TextEditorController({
