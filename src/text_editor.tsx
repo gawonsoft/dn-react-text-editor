@@ -1,7 +1,9 @@
 import React, {
+  useImperativeHandle,
   useMemo,
   type DetailedHTMLProps,
   type InputHTMLAttributes,
+  type Ref,
 } from "react";
 import { useEffect, useRef } from "react";
 import { TextEditorInput } from "./input";
@@ -18,10 +20,12 @@ type HTMLElementProps = DetailedHTMLProps<
 export type TextEditorProps = Omit<HTMLElementProps, "ref"> & {
   controller?: TextEditorController;
   name?: string;
+  ref?: Ref<TextEditorController>;
 } & TextEditorControllerProps;
 
 export function TextEditor({
   controller: externalController,
+  ref,
   name,
   className,
   autoFocus,
@@ -55,6 +59,8 @@ export function TextEditor({
   );
 
   const controller = externalController || innerController;
+
+  useImperativeHandle(ref, () => controller, [controller]);
 
   useEffect(() => {
     const container = containerRef.current;

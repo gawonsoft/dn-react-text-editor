@@ -54,6 +54,8 @@ export class TextEditorController {
 
   prosemirrorSerializer: DOMSerializer;
 
+  element?: HTMLElement;
+
   get value(): string {
     if (this.props.mode === "text") {
       return this.toTextContent();
@@ -109,14 +111,16 @@ export class TextEditorController {
     })(this.view!, files);
   }
 
-  bind(container: HTMLElement) {
+  bind(element: HTMLElement) {
+    this.element = element;
+
     const wrapper = document.createElement("div");
 
     wrapper.innerHTML = this.toInnerHTML(
       this.props.defaultValue ? String(this.props.defaultValue) : ""
     );
 
-    this.view = new EditorView(container, {
+    this.view = new EditorView(element, {
       ...this.props.editor,
       attributes: (state) => {
         const propsAttributes = (() => {
