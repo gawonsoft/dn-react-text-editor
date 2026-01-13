@@ -22,15 +22,8 @@ import { createCommands } from "./commands";
 import { DOMParser, DOMSerializer, type Schema } from "prosemirror-model";
 import { Subject } from "rxjs";
 import { createSchema } from "./schema";
-
-export type CreateTextEditorOptions = {
-  className?: string;
-  style?: string;
-  attachFile?: {
-    generateMetadata?: GenerateMetadata;
-    uploadFile?: UploadFile;
-  };
-};
+import { highlightPlugin } from "prosemirror-highlightjs";
+import { highlighter } from "./plugins/highlighter";
 
 export type TextEditorControllerProps = {
   mode?: "html" | "text";
@@ -40,12 +33,16 @@ export type TextEditorControllerProps = {
   updateDelay?: number;
   placeholder?: string;
   autoFocus?: boolean;
+  className?: string;
+  style?: string;
+  attachFile?: {
+    generateMetadata?: GenerateMetadata;
+    uploadFile?: UploadFile;
+  };
 };
 
 export class TextEditorController {
   schema: Schema;
-
-  options: CreateTextEditorOptions;
 
   props: TextEditorControllerProps;
 
@@ -81,13 +78,8 @@ export class TextEditorController {
     this.view!.dispatch(tr);
   }
 
-  constructor(
-    options: CreateTextEditorOptions = {},
-    props: TextEditorControllerProps = {}
-  ) {
+  constructor(props: TextEditorControllerProps = {}) {
     this.schema = createSchema();
-
-    this.options = options;
 
     this.props = props;
 
@@ -112,8 +104,8 @@ export class TextEditorController {
   attachFile(files: File[]) {
     return createAttachFile({
       schema: this.schema,
-      generateMetadata: this.options.attachFile?.generateMetadata,
-      uploadFile: this.options.attachFile?.uploadFile,
+      generateMetadata: this.props.attachFile?.generateMetadata,
+      uploadFile: this.props.attachFile?.uploadFile,
     })(this.view!, files);
   }
 
@@ -137,11 +129,10 @@ export class TextEditorController {
 
         return {
           ...propsAttributes,
-          class: cn(this.options?.className, propsAttributes?.class),
+          class: cn(this.props?.className, propsAttributes?.class),
           spellcheck: propsAttributes?.spellcheck || "false",
           style:
-            this.options.style ||
-            "width: 100%; height: inherit; outline: none;",
+            this.props.style || "width: 100%; height: inherit; outline: none;",
         };
       },
       state: EditorState.create({
@@ -160,6 +151,11 @@ export class TextEditorController {
             attachFile: (view, files: File[]) => this.attachFile(files),
           }),
           this.props.placeholder && placeholderPlugin(this.props.placeholder),
+          highlightPlugin(highlighter, ["code_block"], (node) => {
+            const auto = highlighter.highlightAuto(node.textContent);
+
+            return auto.language || "";
+          }),
         ].filter((e): e is Plugin => !!(e as Plugin)),
       }),
       dispatchTransaction: (tr) => {

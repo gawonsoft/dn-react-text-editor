@@ -8,7 +8,6 @@ import { useEffect, useRef } from "react";
 import { TextEditorInput } from "./input";
 import {
   TextEditorController,
-  type CreateTextEditorOptions,
   type TextEditorControllerProps,
 } from "./text_editor_controller";
 
@@ -22,11 +21,17 @@ export type TextEditorProps = Omit<HTMLElementProps, "ref"> & {
   name?: string;
 } & TextEditorControllerProps;
 
+type CreateTextEditorOptions = Pick<
+  TextEditorControllerProps,
+  "className" | "style" | "attachFile"
+>;
+
 export function createTextEditor(
   options: CreateTextEditorOptions = {}
 ): FC<TextEditorProps> {
   function Component({
     controller: externalController,
+    name,
     className,
     autoFocus,
     onChange,
@@ -42,7 +47,7 @@ export function createTextEditor(
 
     const innerController = useMemo(
       () =>
-        new TextEditorController(options, {
+        new TextEditorController({
           mode,
           state,
           editor,
@@ -50,6 +55,9 @@ export function createTextEditor(
           placeholder,
           updateDelay,
           defaultValue,
+          className: options.className,
+          style: options.style,
+          attachFile: options.attachFile,
         }),
       []
     );
@@ -74,9 +82,8 @@ export function createTextEditor(
       <>
         <div {...props} ref={containerRef} className={className} />
         <TextEditorInput
+          name={name}
           controller={controller}
-          updateDelay={updateDelay}
-          defaultValue={defaultValue}
           onChange={onChange}
         />
       </>

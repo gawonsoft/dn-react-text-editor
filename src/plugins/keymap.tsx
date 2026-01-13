@@ -11,37 +11,14 @@ export function buildKeymap(schema: Schema) {
     keys[key] = cmd;
   }
 
+  // undo
   bind("Mod-z", undo);
 
+  // redo
   bind("Shift-Mod-z", redo);
-
   bind("Mod-y", redo);
 
-  const li = schema.nodes.list_item;
-
-  // bind("Mod-[", liftListItem(li));
-  // bind("Mod-]", sinkListItem(li));
-
-  bind(
-    "Enter",
-    chainCommands(splitListItem(li), (state, dispatch) => {
-      const { $head } = state.selection;
-
-      if ($head.parent.type === state.schema.nodes.paragraph) {
-        splitBlockAs((n) => {
-          return {
-            type: n.type,
-            attrs: n.attrs,
-          };
-        })(state, dispatch);
-
-        return true;
-      }
-
-      return false;
-    })
-  );
-
+  // ensure paragraph at end of document
   bind("ArrowDown", (state, dispatch) => {
     const doc = state.doc;
 
@@ -65,6 +42,68 @@ export function buildKeymap(schema: Schema) {
       return true;
     }
 
+    return false;
+  });
+
+  const li = schema.nodes.list_item;
+
+  bind(
+    "Enter",
+    chainCommands(
+      splitListItem(li),
+      (state, dispatch) => {
+        // default behavior: split block
+        const { $head } = state.selection;
+
+        if ($head.parent.type === state.schema.nodes.paragraph) {
+          splitBlockAs((n) => {
+            return {
+              type: n.type,
+              attrs: n.attrs,
+            };
+          })(state, dispatch);
+
+          return true;
+        }
+
+        return false;
+      },
+      (state, dispatch) => {
+        // code block indentation
+        const { selection } = state;
+        const { $from, $to } = selection;
+
+        const lines = state.doc
+          .textBetween($from.before(), $to.pos)
+          .split("\n");
+
+        const currentLine = lines[lines.length - 1];
+
+        const match = currentLine.match(/^(\s+).*$/);
+
+        if (match) {
+          if (dispatch) {
+            dispatch(state.tr.insertText("\n" + match[1], $from.pos));
+          }
+          return true;
+        }
+
+        return false;
+      }
+    )
+  );
+
+  // code block indentation
+  bind("Tab", (state, dispatch) => {
+    const { selection } = state;
+    const { $from, $to } = selection;
+
+    if ($from.parent.type === schema.nodes.code_block) {
+      if (dispatch) {
+        dispatch(state.tr.insertText("  ", $from.pos, $to.pos));
+      }
+      return true;
+    }
     return false;
   });
 

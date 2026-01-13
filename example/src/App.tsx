@@ -9,7 +9,9 @@ import "highlight.js/styles/github.css";
 const TextEditor = createTextEditor();
 
 export default function App() {
-  const controller = new TextEditorController();
+  const controller = new TextEditorController({
+    placeholder: "Start typing...",
+  });
 
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -20,7 +22,6 @@ export default function App() {
         <TextEditor
           controller={controller}
           className="text-editor"
-          placeholder="Write something..."
           onChange={(e) => {
             previewRef.current!.innerHTML = createInnerHTML(e.target.value);
           }}

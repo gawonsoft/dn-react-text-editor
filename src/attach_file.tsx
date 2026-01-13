@@ -98,7 +98,13 @@ export function createAttachFile({
         return;
       }
 
-      view.dispatch(tr.replaceWith($pos, $pos, node));
+      const current = view.state.doc.resolve($pos);
+
+      if (current.parentOffset === 0) {
+        view.dispatch(tr.replaceWith($pos - 1, $pos, node));
+      } else {
+        view.dispatch(tr.replaceWith($pos, $pos, node));
+      }
     } catch (e) {
       view.dispatch(tr.setMeta(uploadPlaceholderPlugin, { remove: { id } }));
     }

@@ -11,12 +11,14 @@ export function createInnerHTML(raw: string) {
     .replace(
       /<code class="language-(\w+)">([\s\S]*?)<\/code>/g,
       (_, lang, code) => {
-        try {
-          const highlighted = highlighter.highlight(code, {
-            language: lang,
-          }).value;
+        if (lang === "undefined") {
+          return `<code>${decode(code)}</code>`;
+        }
 
-          return `<code class="language-${lang}">${decode(highlighted)}</code>`;
+        try {
+          const { language, value } = highlighter.highlightAuto(code);
+
+          return `<code class="language-${language}">${decode(value)}</code>`;
         } catch (e) {
           return `<code class="language-${lang}">${decode(code)}</code>`;
         }

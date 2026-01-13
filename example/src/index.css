@@ -19,7 +19,7 @@ p {
   display: flex;
 }
 
-.text-editor[data-placeholder]::before {
+.ProseMirror[data-placeholder]::before {
   content: attr(data-placeholder);
   color: #888;
   pointer-events: none;

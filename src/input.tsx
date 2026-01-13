@@ -11,24 +11,18 @@ type Props = Omit<
   "ref"
 > & {
   controller: TextEditorController;
-  updateDelay?: number;
   name?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 };
 
-export function TextEditorInput({
-  controller,
-  onChange,
-  updateDelay = 0,
-  ...props
-}: Props) {
+export function TextEditorInput({ controller, onChange, ...props }: Props) {
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const sub = controller.subject
       .pipe(
         filter((tr) => tr.docChanged),
-        debounceTime(updateDelay)
+        debounceTime(controller.props.updateDelay || 0)
       )
       .subscribe(() => {
         if (inputRef.current) {
@@ -45,5 +39,13 @@ export function TextEditorInput({
     };
   }, []);
 
-  return <input {...props} ref={inputRef} type="hidden" onInput={onChange} />;
+  return (
+    <input
+      {...props}
+      ref={inputRef}
+      type="hidden"
+      onInput={onChange}
+      defaultValue={controller.props.defaultValue}
+    />
+  );
 }
