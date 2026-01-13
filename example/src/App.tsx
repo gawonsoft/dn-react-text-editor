@@ -3,23 +3,23 @@ import {
   TextEditor,
   TextEditorController,
 } from "dn-react-text-editor";
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import "highlight.js/styles/github.css";
 
 export default function App() {
-  const controller = new TextEditorController({
-    placeholder: "Start typing...",
-  });
+  const controllerRef = useRef<TextEditorController>(null);
 
   const previewRef = useRef<HTMLDivElement>(null);
 
   return (
     <div>
-      <Toolbar controller={controller} />
+      <Toolbar controller={controllerRef} />
       <div className="app">
         <TextEditor
-          controller={controller}
+          ref={controllerRef}
           className="text-editor"
+          placeholder="Start typings..."
+          defaultValue={"<p>Hello world!</p>"}
           onChange={(e) => {
             previewRef.current!.innerHTML = createInnerHTML(e.target.value);
           }}
@@ -30,44 +30,70 @@ export default function App() {
   );
 }
 
-function Toolbar({ controller }: { controller: TextEditorController }) {
+function Toolbar({
+  controller,
+}: {
+  controller: RefObject<TextEditorController | null>;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const withController = (fn: (controller: TextEditorController) => void) => {
+    if (controller.current) {
+      fn(controller.current);
+    }
+  };
 
   return (
     <div className="toolbar">
       <button
         type="button"
-        onClick={() => {
-          alert("Submitted value:" + controller.value);
-        }}
+        onClick={() =>
+          withController((controller) => {
+            alert("Submitted value:" + controller.value);
+          })
+        }
       >
         Submit
       </button>
-      <button type="button" onClick={() => controller.commands.undo()}>
+      <button
+        type="button"
+        onClick={() =>
+          withController((controller) => controller.commands.undo())
+        }
+      >
         Undo
       </button>
-      <button type="button" onClick={() => controller.commands.redo()}>
+      <button
+        type="button"
+        onClick={() =>
+          withController((controller) => controller.commands.redo())
+        }
+      >
         Redo
       </button>
       <button
         type="button"
-        onClick={() => {
-          controller.commands.clear();
-        }}
+        onClick={() =>
+          withController((controller) => {
+            controller.commands.clear();
+          })
+        }
       >
         Clear
       </button>
       <button
         type="button"
-        onClick={() => {
-          const href = prompt("Enter URL", "https://");
+        onClick={() =>
+          withController((controller) => {
+            const href = prompt("Enter URL", "https://");
 
-          if (!href) {
-            return;
-          }
+            if (!href) {
+              return;
+            }
 
-          controller.commands.toggleMark("link", { href });
-        }}
+            controller.commands.toggleMark("link", { href });
+          })
+        }
       >
         Link
       </button>
@@ -77,44 +103,54 @@ function Toolbar({ controller }: { controller: TextEditorController }) {
       <input
         ref={inputRef}
         type="file"
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
+        onChange={(e) =>
+          withController((controller) => {
+            const files = Array.from(e.target.files || []);
 
-          controller.commands.attachFile(files);
-        }}
+            controller.commands.attachFile(files);
+          })
+        }
         style={{
           display: "none",
         }}
       />
       <button
         type="button"
-        onClick={() => {
-          controller.commands.setBlockType("heading", { level: 1 });
-        }}
+        onClick={() =>
+          withController((controller) => {
+            controller.commands.setBlockType("heading", { level: 1 });
+          })
+        }
       >
         H1
       </button>
       <button
         type="button"
-        onClick={() => {
-          controller.commands.wrapInList("ordered_list");
-        }}
+        onClick={() =>
+          withController((controller) => {
+            controller.commands.wrapInList("ordered_list");
+          })
+        }
       >
         Ordered List
       </button>
       <button
         type="button"
-        onClick={() => {
-          controller.commands.wrapInList("bullet_list");
-        }}
+        onClick={() =>
+          withController((controller) => {
+            controller.commands.wrapInList("bullet_list");
+          })
+        }
       >
         Bullet List
       </button>
       <button
         type="button"
-        onClick={() => {
-          controller.commands.setBlockType("code_block");
-        }}
+        onClick={() =>
+          withController((controller) => {
+            controller.commands.setBlockType("code_block");
+          })
+        }
       >
         Code Block
       </button>

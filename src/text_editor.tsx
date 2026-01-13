@@ -18,13 +18,11 @@ type HTMLElementProps = DetailedHTMLProps<
 >;
 
 export type TextEditorProps = Omit<HTMLElementProps, "ref"> & {
-  controller?: TextEditorController;
   name?: string;
   ref?: Ref<TextEditorController>;
 } & TextEditorControllerProps;
 
 export function TextEditor({
-  controller: externalController,
   ref,
   name,
   className,
@@ -42,7 +40,7 @@ export function TextEditor({
 }: TextEditorProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const innerController = useMemo(
+  const controller = useMemo(
     () =>
       new TextEditorController({
         mode,
@@ -57,8 +55,6 @@ export function TextEditor({
       }),
     []
   );
-
-  const controller = externalController || innerController;
 
   useImperativeHandle(ref, () => controller, [controller]);
 
