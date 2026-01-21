@@ -1,8 +1,7 @@
-import type { DetailedHTMLProps } from "react";
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
 import { highlighter } from "./plugins/highlighter";
 import { decode } from "html-entities";
 import { cn } from "./cn";
-import React from "react";
 
 export function createInnerHTML(raw: string) {
   return raw
@@ -22,13 +21,13 @@ export function createInnerHTML(raw: string) {
         } catch (e) {
           return `<code class="language-${lang}">${decode(code)}</code>`;
         }
-      }
+      },
     )
     .replace(
       /<a([^>]*target="_blank"[^>]*)>(.*?)<\/a>/g,
       (_, attrs, content) => {
         return `<a${attrs} rel="noopener noreferrer" target="_blank">${content}<svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:inline; height:1em;"><path d="M18.25 15.5a.75.75 0 0 1-.75-.75V7.56L7.28 17.78a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L16.44 6.5H9.25a.75.75 0 0 1 0-1.5h9a.75.75 0 0 1 .75.75v9a.75.75 0 0 1-.75.75Z"></path></svg></a>`;
-      }
+      },
     );
 }
 
@@ -37,14 +36,14 @@ export function createTextEditorView(options: { className?: string } = {}) {
     className,
     dangerouslySetInnerHTML,
     ...props
-  }: DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement>) {
+  }: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>) {
     return (
       <div
         {...props}
         className={cn(options?.className, className)}
         dangerouslySetInnerHTML={{
           __html: createInnerHTML(
-            String(dangerouslySetInnerHTML?.__html || "")
+            String(dangerouslySetInnerHTML?.__html || ""),
           ),
         }}
       />

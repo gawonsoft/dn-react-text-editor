@@ -1,5 +1,7 @@
-import React, {
+import {
   useEffect,
+  useRef,
+  type ChangeEvent,
   type DetailedHTMLProps,
   type HTMLAttributes,
 } from "react";
@@ -12,17 +14,17 @@ type Props = Omit<
 > & {
   controller: TextEditorController;
   name?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
 };
 
 export function TextEditorInput({ controller, onChange, ...props }: Props) {
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const sub = controller.subject
       .pipe(
         filter((tr) => tr.docChanged),
-        debounceTime(controller.props.updateDelay || 0)
+        debounceTime(controller.props.updateDelay || 0),
       )
       .subscribe(() => {
         if (inputRef.current) {

@@ -1,4 +1,4 @@
-import React, {
+import {
   useImperativeHandle,
   useMemo,
   type DetailedHTMLProps,
@@ -53,7 +53,7 @@ export function TextEditor({
         attachFile,
         style,
       }),
-    []
+    [],
   );
 
   useImperativeHandle(ref, () => controller, [controller]);
