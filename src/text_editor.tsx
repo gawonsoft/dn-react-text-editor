@@ -18,9 +18,10 @@ type HTMLElementProps = DetailedHTMLProps<
     HTMLInputElement
 >;
 
-export type TextEditorProps = Omit<HTMLElementProps, "ref"> & {
+export type TextEditorProps = Omit<HTMLElementProps, "ref" | "onChange"> & {
     name?: string;
     ref?: Ref<TextEditorController>;
+    onChange?: Parameters<typeof TextEditorInput>[0]["onChange"];
 } & TextEditorControllerProps;
 
 export function TextEditor({
