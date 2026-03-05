@@ -26,6 +26,7 @@ import { highlightPlugin } from "prosemirror-highlightjs";
 import { highlighter } from "./plugins/highlighter";
 
 export type TextEditorControllerProps = {
+  schema?: Schema;
   mode?: "html" | "text";
   state?: Partial<EditorStateConfig>;
   editor?: Partial<DirectEditorProps>;
@@ -74,14 +75,14 @@ export class TextEditorController {
     const tr = this.view!.state.tr.replaceWith(
       0,
       this.view!.state.doc.content.size,
-      doc.content
+      doc.content,
     );
 
     this.view!.dispatch(tr);
   }
 
   constructor(props: TextEditorControllerProps = {}) {
-    this.schema = createSchema();
+    this.schema = props.schema || createSchema();
 
     this.props = props;
 
@@ -117,7 +118,7 @@ export class TextEditorController {
     const wrapper = document.createElement("div");
 
     wrapper.innerHTML = this.toInnerHTML(
-      this.props.defaultValue ? String(this.props.defaultValue) : ""
+      this.props.defaultValue ? String(this.props.defaultValue) : "",
     );
 
     this.view = new EditorView(element, {
@@ -184,7 +185,7 @@ export class TextEditorController {
 
   toHTML(): string {
     const fragment = this.prosemirrorSerializer.serializeFragment(
-      this.view!.state.doc.content
+      this.view!.state.doc.content,
     );
 
     const container = document.createElement("div");
@@ -217,7 +218,7 @@ export type ConfigTextEditorOptions = Pick<
 >;
 
 export const configTextEditorController = (
-  options: ConfigTextEditorOptions = {}
+  options: ConfigTextEditorOptions = {},
 ) => {
   return (props: TextEditorControllerProps = {}) =>
     new TextEditorController({

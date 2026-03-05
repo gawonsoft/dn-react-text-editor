@@ -1,59 +1,59 @@
 {
-    "name": "dn-react-text-editor",
-    "version": "0.3.9",
-    "types": "./dist/index.d.ts",
-    "main": "./dist/index.mjs",
-    "module": "./dist/index.js",
-    "sideEffects": false,
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.mjs",
-            "require": "./dist/index.js"
-        },
-        "./prosemirror": {
-            "types": "./dist/prosemirror/index.d.ts",
-            "import": "./dist/prosemirror/index.mjs",
-            "require": "./dist/prosemirror/index.js"
-        }
+  "name": "dn-react-text-editor",
+  "version": "0.3.10",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.js",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
-    "scripts": {
-        "build": "NODE_OPTIONS='--max-old-space-size=16384' tsup",
-        "dev": "tsup --watch"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/dndnsoft/dn-react-text-editor.git"
-    },
-    "author": "",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/dndnsoft/dn-react-text-editor/issues"
-    },
-    "homepage": "https://github.com/dndnsoft/dn-react-text-editor#readme",
-    "description": "",
-    "devDependencies": {
-        "@types/node": "^24.10.1",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "tsup": "^8.5.1",
-        "typescript": "^5.7.3"
-    },
-    "peerDependencies": {
-        "react": "^19",
-        "react-dom": "^19"
-    },
-    "dependencies": {
-        "highlight.js": "^11.11.1",
-        "html-entities": "^2.6.0",
-        "prosemirror-commands": "^1.7.1",
-        "prosemirror-highlightjs": "^0.9.1",
-        "prosemirror-history": "^1.5.0",
-        "prosemirror-keymap": "^1.2.3",
-        "prosemirror-model": "^1.25.4",
-        "prosemirror-schema-list": "^1.5.1",
-        "prosemirror-state": "^1.4.4",
-        "prosemirror-view": "^1.41.3",
-        "rxjs": "^7.8.2"
+    "./prosemirror": {
+      "types": "./dist/prosemirror/index.d.ts",
+      "import": "./dist/prosemirror/index.mjs",
+      "require": "./dist/prosemirror/index.js"
     }
+  },
+  "scripts": {
+    "build": "NODE_OPTIONS='--max-old-space-size=16384' tsup",
+    "dev": "tsup --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dndnsoft/dn-react-text-editor.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dndnsoft/dn-react-text-editor/issues"
+  },
+  "homepage": "https://github.com/dndnsoft/dn-react-text-editor#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tsup": "^8.5.1",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "html-entities": "^2.6.0",
+    "prosemirror-commands": "^1.7.1",
+    "prosemirror-highlightjs": "^0.9.1",
+    "prosemirror-history": "^1.5.0",
+    "prosemirror-keymap": "^1.2.3",
+    "prosemirror-model": "^1.25.4",
+    "prosemirror-schema-list": "^1.5.1",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-view": "^1.41.3",
+    "rxjs": "^7.8.2"
+  }
 }
