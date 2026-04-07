@@ -18,7 +18,6 @@ import {
   type GenerateMetadata,
   type UploadFile,
 } from "./attach_file";
-import { createCommands } from "./commands";
 import { DOMParser, DOMSerializer, type Schema } from "prosemirror-model";
 import { Subject } from "rxjs";
 import { createSchema } from "./schema";
@@ -199,12 +198,6 @@ export class TextEditorController {
     const state = this.view!.state;
 
     return state.doc.textBetween(0, state.doc.content.size, "\n");
-  }
-
-  get commands() {
-    return createCommands(this.schema, this.view!, {
-      attachFile: (view, files: File[]) => this.attachFile(files),
-    });
   }
 
   dispose() {
