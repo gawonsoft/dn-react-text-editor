@@ -169,7 +169,7 @@ export class TextEditorTool {
     this.view.dispatch(tr);
   };
 
-  align = (align: "left" | "center" | "right") => {
+  align = (align: "left" | "center" | "right" | "justify") => {
     this.view.focus();
 
     const state = this.view.state;
