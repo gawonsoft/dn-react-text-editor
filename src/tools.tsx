@@ -112,7 +112,10 @@ export class TextEditorTool {
     const command = prosemirrorCommands.setBlockType(nodeType, attrs);
 
     if (this.isActiveBlock(nodeType, attrs)) {
-      this.toggleBlockType("paragraph");
+      prosemirrorCommands.setBlockType(this.schema.nodes.paragraph, null)(
+        this.view.state,
+        this.view.dispatch,
+      );
     } else {
       command(this.view.state, this.view.dispatch);
     }

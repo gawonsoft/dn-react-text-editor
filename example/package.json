@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "dn-react-input": "^0.1.1",
-    "dn-react-text-editor": "../",
+    "gw-react-text-editor": "../",
     "highlight.js": "^11.11.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

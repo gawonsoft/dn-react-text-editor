@@ -3,7 +3,7 @@ import {
   TextEditor,
   TextEditorController,
   TextEditorTool,
-} from "dn-react-text-editor";
+} from "gw-react-text-editor";
 import { useRef, type RefObject } from "react";
 import "highlight.js/styles/github.css";
 
