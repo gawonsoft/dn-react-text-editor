@@ -139,6 +139,16 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  wrapIn = (node: string, attrs?: Attrs | null) => {
+    this.view.focus();
+
+    const nodeType = this.schema.nodes[node];
+
+    const command = prosemirrorCommands.wrapIn(nodeType, attrs);
+
+    command(this.view.state, this.view.dispatch);
+  };
+
   wrapInList = (listType: string, attrs?: Attrs | null) => {
     this.view.focus();
 
