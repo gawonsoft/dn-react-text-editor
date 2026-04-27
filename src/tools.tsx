@@ -159,6 +159,40 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  replaceSelectionWith = (node: string, attrs?: Attrs | null) => {
+    this.view.focus();
+
+    const nodeType = this.schema.nodes[node];
+
+    const tr = this.view.state.tr.replaceSelectionWith(nodeType.create(attrs));
+
+    this.view.dispatch(tr);
+  };
+
+  align = (align: "left" | "center" | "right") => {
+    this.view.focus();
+
+    const state = this.view.state;
+
+    const { $from } = state.selection;
+
+    const pos = $from.before();
+
+    const n = $from.node();
+
+    let tr = state.tr;
+
+    if (["paragraph", "heading"].includes(n.type.name)) {
+      tr = tr.setNodeAttribute(
+        pos,
+        "align",
+        n.attrs.align === align ? null : align,
+      );
+    }
+
+    this.view.dispatch(tr);
+  };
+
   clear = () => {
     const tr = this.view.state.tr.replaceWith(
       0,
