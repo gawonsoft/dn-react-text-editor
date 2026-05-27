@@ -155,11 +155,11 @@ export class TextEditorController {
             attachFile: (view, files: File[]) => this.attachFile(files),
           }),
           this.props.placeholder && placeholderPlugin(this.props.placeholder),
-          highlightPlugin(highlighter, ["code_block"], (node) => {
-            const auto = highlighter.highlightAuto(node.textContent);
+          // highlightPlugin(highlighter, ["code_block"], (node) => {
+          //   const auto = highlighter.highlightAuto(node.textContent);
 
-            return auto.language || "";
-          }),
+          //   return auto.language || "";
+          // }),
         ].filter((e): e is Plugin => !!(e as Plugin)),
       }),
       dispatchTransaction: (tr) => {
