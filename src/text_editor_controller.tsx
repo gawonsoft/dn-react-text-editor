@@ -21,8 +21,8 @@ import {
 import { DOMParser, DOMSerializer, type Schema } from "prosemirror-model";
 import { Subject } from "rxjs";
 import { createSchema } from "./schema";
-import { highlightPlugin } from "prosemirror-highlightjs";
-import { highlighter } from "./plugins/highlighter";
+// import { highlightPlugin } from "prosemirror-highlightjs";
+// import { highlighter } from "./plugins/highlighter";
 
 export type TextEditorControllerProps = {
   schema?: Schema;

@@ -1,6 +1,6 @@
 import { Schema, type SchemaSpec } from "prosemirror-model";
 import { addListNodes } from "prosemirror-schema-list";
-import { highlighter, supportedLanguages } from "./plugins/highlighter";
+// import { highlighter, supportedLanguages } from "./plugins/highlighter";
 
 export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
   const customSchema = new Schema({
@@ -325,10 +325,10 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
         defining: true,
         parseDOM: [{ tag: "pre", preserveWhitespace: "full" }],
         toDOM(node) {
-          const auto = highlighter.highlightAuto(
-            node.textContent,
-            supportedLanguages
-          );
+          // const auto = highlighter.highlightAuto(
+          //   node.textContent,
+          //   supportedLanguages
+          // );
 
           return [
             "pre",
@@ -337,9 +337,9 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             },
             [
               "code",
-              {
-                class: `language-${auto.language}`,
-              },
+              // {
+              //   class: `language-${auto.language}`,
+              // },
               0,
             ],
           ];
