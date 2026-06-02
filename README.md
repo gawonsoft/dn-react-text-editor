@@ -10,6 +10,7 @@ import { TextEditor } from "dn-react-text-editor";
 function App() {
   return (
     <TextEditor
+      name="content"
       placeholder="Write something..."
       onChange={(e) => {
         console.log(e.target.value);

@@ -120,62 +120,66 @@ export class TextEditorController {
       this.props.defaultValue ? String(this.props.defaultValue) : "",
     );
 
-    this.view = new EditorView(element, {
-      ...this.props.editor,
-      attributes: (state) => {
-        const propsAttributes = (() => {
-          if (typeof this.props.editor?.attributes === "function") {
-            return this.props.editor.attributes(state);
+    this.view = new EditorView(
+      { mount: element },
+      {
+        ...this.props.editor,
+        attributes: (state) => {
+          const propsAttributes = (() => {
+            if (typeof this.props.editor?.attributes === "function") {
+              return this.props.editor.attributes(state);
+            }
+
+            return this.props.editor?.attributes;
+          })();
+
+          return {
+            ...propsAttributes,
+            class: cn(this.props.className, propsAttributes?.class),
+            spellcheck: propsAttributes?.spellcheck || "false",
+            style:
+              this.props.style ||
+              "width: 100%; height: inherit; outline: none;",
+          };
+        },
+        state: EditorState.create({
+          ...this.props.state,
+          schema: this.props.state?.schema || this.schema,
+          doc: this.props.state?.doc || this.prosemirrorParser.parse(wrapper),
+          plugins: [
+            ...(this.props.state?.plugins || []),
+            history({
+              newGroupDelay: this.props.updateDelay,
+            }),
+            keymap(buildKeymap(this.schema)),
+            keymap(commands.baseKeymap),
+            uploadPlaceholderPlugin,
+            dragAndDropPlugin({
+              attachFile: (view, files: File[]) => this.attachFile(files),
+            }),
+            this.props.placeholder && placeholderPlugin(this.props.placeholder),
+            // highlightPlugin(highlighter, ["code_block"], (node) => {
+            //   const auto = highlighter.highlightAuto(node.textContent);
+
+            //   return auto.language || "";
+            // }),
+          ].filter((e): e is Plugin => !!(e as Plugin)),
+        }),
+        dispatchTransaction: (tr) => {
+          let result;
+
+          if (this.props.editor?.dispatchTransaction) {
+            result = this.props.editor.dispatchTransaction(tr);
+          } else {
+            this.view?.updateState(this.view.state.apply(tr));
           }
 
-          return this.props.editor?.attributes;
-        })();
+          this.subject.next(tr);
 
-        return {
-          ...propsAttributes,
-          class: cn(this.props.className, propsAttributes?.class),
-          spellcheck: propsAttributes?.spellcheck || "false",
-          style:
-            this.props.style || "width: 100%; height: inherit; outline: none;",
-        };
+          return result;
+        },
       },
-      state: EditorState.create({
-        ...this.props.state,
-        schema: this.props.state?.schema || this.schema,
-        doc: this.props.state?.doc || this.prosemirrorParser.parse(wrapper),
-        plugins: [
-          ...(this.props.state?.plugins || []),
-          history({
-            newGroupDelay: this.props.updateDelay,
-          }),
-          keymap(buildKeymap(this.schema)),
-          keymap(commands.baseKeymap),
-          uploadPlaceholderPlugin,
-          dragAndDropPlugin({
-            attachFile: (view, files: File[]) => this.attachFile(files),
-          }),
-          this.props.placeholder && placeholderPlugin(this.props.placeholder),
-          // highlightPlugin(highlighter, ["code_block"], (node) => {
-          //   const auto = highlighter.highlightAuto(node.textContent);
-
-          //   return auto.language || "";
-          // }),
-        ].filter((e): e is Plugin => !!(e as Plugin)),
-      }),
-      dispatchTransaction: (tr) => {
-        let result;
-
-        if (this.props.editor?.dispatchTransaction) {
-          result = this.props.editor.dispatchTransaction(tr);
-        } else {
-          this.view?.updateState(this.view.state.apply(tr));
-        }
-
-        this.subject.next(tr);
-
-        return result;
-      },
-    });
+    );
 
     if (this.props.autoFocus) {
       this.view?.focus();

@@ -16,7 +16,6 @@ p {
   flex: 1;
   border: 1px solid #ccc;
   min-height: 100px;
-  display: flex;
 }
 
 .ProseMirror[data-placeholder]::before {
