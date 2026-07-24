@@ -21,6 +21,7 @@ import {
 import { DOMParser, DOMSerializer, type Schema } from "prosemirror-model";
 import { Subject } from "rxjs";
 import { createSchema } from "./schema";
+import { escapeHTML, sanitizeHTML } from "./html";
 // import { highlightPlugin } from "prosemirror-highlightjs";
 // import { highlighter } from "./plugins/highlighter";
 
@@ -41,6 +42,7 @@ export type TextEditorControllerProps = {
   };
 };
 
+/** Owns the ProseMirror view, serialization pipeline, and editor transaction stream. */
 export class TextEditorController {
   schema: Schema;
 
@@ -56,6 +58,7 @@ export class TextEditorController {
 
   element?: HTMLElement;
 
+  /** Serializes the current document according to the configured output mode. */
   get value(): string {
     if (this.props.mode === "text") {
       return this.toTextContent();
@@ -64,6 +67,7 @@ export class TextEditorController {
     return this.toHTML();
   }
 
+  /** Replaces the document with sanitized HTML or escaped plain text. */
   set value(value: string) {
     const wrap = document.createElement("div");
 
@@ -80,6 +84,7 @@ export class TextEditorController {
     this.view!.dispatch(tr);
   }
 
+  /** Initializes the schema and DOM conversion helpers before the view mounts. */
   constructor(props: TextEditorControllerProps = {}) {
     this.schema = props.schema || createSchema();
 
@@ -92,25 +97,28 @@ export class TextEditorController {
     this.prosemirrorSerializer = DOMSerializer.fromSchema(this.schema);
   }
 
+  /** Converts external text or HTML into safe markup for ProseMirror parsing. */
   toInnerHTML(value: string) {
     if (this.props.mode === "text") {
       return value
         .split("\n")
-        .map((line) => `<p>${line}</p>`)
+        .map((line) => `<p>${escapeHTML(line)}</p>`)
         .join("");
     }
 
-    return value;
+    return sanitizeHTML(value);
   }
 
-  attachFile(files: File[]) {
+  /** Queues media files for upload and inserts them at the optional document position. */
+  attachFile(files: File[], pos?: number) {
     return createAttachFile({
       schema: this.schema,
       generateMetadata: this.props.attachFile?.generateMetadata,
       uploadFile: this.props.attachFile?.uploadFile,
-    })(this.view!, files);
+    })(this.view!, files, pos);
   }
 
+  /** Mounts the editor view and installs its commands, history, and media plugins. */
   bind(element: HTMLElement) {
     this.element = element;
 
@@ -155,7 +163,8 @@ export class TextEditorController {
             keymap(commands.baseKeymap),
             uploadPlaceholderPlugin,
             dragAndDropPlugin({
-              attachFile: (view, files: File[]) => this.attachFile(files),
+              attachFile: (_view, files: File[], pos?: number) =>
+                this.attachFile(files, pos),
             }),
             this.props.placeholder && placeholderPlugin(this.props.placeholder),
             // highlightPlugin(highlighter, ["code_block"], (node) => {
@@ -186,6 +195,7 @@ export class TextEditorController {
     }
   }
 
+  /** Serializes the current ProseMirror document fragment as HTML. */
   toHTML(): string {
     const fragment = this.prosemirrorSerializer.serializeFragment(
       this.view!.state.doc.content,
@@ -198,12 +208,14 @@ export class TextEditorController {
     return container.innerHTML;
   }
 
+  /** Extracts plain text with paragraph boundaries represented as newlines. */
   toTextContent(): string {
     const state = this.view!.state;
 
     return state.doc.textBetween(0, state.doc.content.size, "\n");
   }
 
+  /** Destroys the mounted ProseMirror view and its DOM listeners. */
   dispose() {
     this.view?.destroy();
   }
@@ -214,6 +226,7 @@ export type ConfigTextEditorOptions = Pick<
   "className" | "style" | "attachFile"
 >;
 
+/** Creates a controller factory that merges application-wide defaults with per-editor options. */
 export const configTextEditorController = (
   options: ConfigTextEditorOptions = {},
 ) => {

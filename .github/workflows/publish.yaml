@@ -14,25 +14,32 @@ on:
 jobs:
     publish:
         runs-on: ubuntu-latest
+                permissions:
+                        contents: read
+                        id-token: write
         steps:
-            - uses: actions/checkout@v3
+                        - uses: actions/checkout@v4
 
-            - uses: actions/setup-node@v3
+                        - uses: actions/setup-node@v4
               with:
-                  node-version: 24
+                                    node-version: 20
                   registry-url: "https://registry.npmjs.org"
+                                    cache: npm
 
             - name: Check package version
-              id: cpv
-              uses: PostHog/check-package-version@v2
-              continue-on-error: true
+                            id: version
+                            shell: bash
+                            run: |
+                                    package_name="$(node -p "require('./package.json').name")"
+                                    package_version="$(node -p "require('./package.json').version")"
+                                    if npm view "${package_name}@${package_version}" version >/dev/null 2>&1; then
+                                        echo "publish=false" >> "$GITHUB_OUTPUT"
+                                    else
+                                        echo "publish=true" >> "$GITHUB_OUTPUT"
+                                    fi
 
             - name: npm publish
-              if: steps.cpv.outputs.is-new-version == 'true' || steps.cpv.outcome == 'failure'
-              run: |
-                  rm -rf package-lock.json
-                  npm i
-                  npm run build
-                  npm publish
+                            if: steps.version.outputs.publish == 'true'
+                            run: npm ci && npm publish --provenance
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}

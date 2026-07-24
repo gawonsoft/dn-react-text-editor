@@ -2,6 +2,20 @@ import { Schema, type SchemaSpec } from "prosemirror-model";
 import { addListNodes } from "prosemirror-schema-list";
 // import { highlighter, supportedLanguages } from "./plugins/highlighter";
 
+/** Parses an optional HTML dimension attribute without admitting NaN or infinity. */
+function getNumericAttribute(element: HTMLElement, name: string) {
+  const value = element.getAttribute(name);
+
+  if (value === null || value === "") {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
+/** Creates the default ProseMirror schema and merges caller-provided node and mark specs. */
 export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
   const customSchema = new Schema({
     nodes: {
@@ -55,7 +69,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 1,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -64,7 +78,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 2,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -73,7 +87,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 3,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -82,7 +96,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 4,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -91,7 +105,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 5,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -100,7 +114,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             getAttrs(node) {
               return {
                 level: 6,
-                algin: node.style.textAlign || null,
+                align: node.style.textAlign || null,
               };
             },
           },
@@ -141,19 +155,23 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             default: null,
             validate: "number|null",
           },
+          srcSet: { default: null, validate: "string|null" },
+          sizes: { default: null, validate: "string|null" },
         },
         inline: false,
         group: "block",
         draggable: true,
         parseDOM: [
           {
-            tag: "img",
+            tag: "img[src]",
             getAttrs(dom: HTMLElement) {
               return {
                 src: dom.getAttribute("src"),
                 alt: dom.getAttribute("alt"),
-                width: dom.getAttribute("width"),
-                height: dom.getAttribute("height"),
+                width: getNumericAttribute(dom, "width"),
+                height: getNumericAttribute(dom, "height"),
+                srcSet: dom.getAttribute("srcset"),
+                sizes: dom.getAttribute("sizes"),
               };
             },
           },
@@ -204,8 +222,8 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
               return {
                 src: dom.getAttribute("src"),
                 title: dom.getAttribute("title"),
-                width: dom.getAttribute("width"),
-                height: dom.getAttribute("height"),
+                width: getNumericAttribute(dom, "width"),
+                height: getNumericAttribute(dom, "height"),
                 poster: dom.getAttribute("poster"),
               };
             },
@@ -270,12 +288,12 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
               return {
                 src: dom.getAttribute("src"),
                 title: dom.getAttribute("title"),
-                width: dom.getAttribute("width"),
-                height: dom.getAttribute("height"),
+                width: getNumericAttribute(dom, "width"),
+                height: getNumericAttribute(dom, "height"),
                 style: dom.getAttribute("style"),
                 allow: dom.getAttribute("allow"),
                 allowfullscreen: dom.getAttribute("allowfullscreen"),
-                referrerpolicy: dom.getAttribute("referrerpolicy"),
+                referrerPolicy: dom.getAttribute("referrerpolicy"),
               };
             },
           },
@@ -288,7 +306,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
             height,
             allow,
             allowfullscreen,
-            referrerpolicy,
+            referrerPolicy,
             style,
           } = node.attrs;
 
@@ -302,7 +320,7 @@ export function createSchema(spec: SchemaSpec = { nodes: {}, marks: {} }) {
               style,
               allow,
               allowfullscreen,
-              referrerpolicy,
+              referrerpolicy: referrerPolicy,
               frameborder: "0",
             },
           ];

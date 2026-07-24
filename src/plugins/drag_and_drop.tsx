@@ -1,6 +1,7 @@
 import { Plugin } from "prosemirror-state";
 import type { AttachFile } from "../attach_file";
 
+/** Creates a drop handler that inserts supported media at the pointer location. */
 export function dragAndDropPlugin({ attachFile }: { attachFile?: AttachFile }) {
   return new Plugin({
     props: {
@@ -19,12 +20,10 @@ export function dragAndDropPlugin({ attachFile }: { attachFile?: AttachFile }) {
           event.preventDefault();
 
           const pos =
-            view.state.selection.$from.pos ||
             view.posAtCoords({
               left: event.clientX,
               top: event.clientY,
-            })?.pos ||
-            null;
+            })?.pos ?? view.state.selection.$from.pos;
 
           if (pos === null) {
             return;
@@ -32,10 +31,10 @@ export function dragAndDropPlugin({ attachFile }: { attachFile?: AttachFile }) {
 
           const medias = Array.from(files).filter(
             (file) =>
-              file.type.startsWith("image/") || file.type.startsWith("video/")
+              file.type.startsWith("image/") || file.type.startsWith("video/"),
           );
 
-          attachFile(view, medias);
+          attachFile(view, medias, pos);
 
           return true;
         },

@@ -1,10 +1,16 @@
 {
   "name": "gw-react-text-editor",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "types": "./dist/index.d.ts",
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,8 +24,14 @@
     }
   },
   "scripts": {
-    "build": "NODE_OPTIONS='--max-old-space-size=16384' tsup",
-    "dev": "tsup --watch"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run verify"
   },
   "repository": {
     "type": "git",
@@ -31,23 +43,38 @@
     "url": "https://github.com/dndnsoft/gw-react-text-editor/issues"
   },
   "homepage": "https://github.com/dndnsoft/gw-react-text-editor#readme",
-  "description": "",
+  "description": "A ProseMirror-based rich text editor for React.",
+  "keywords": [
+    "react",
+    "rich-text-editor",
+    "prosemirror",
+    "wysiwyg",
+    "typescript"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "jsdom": "^29.1.1",
     "tsup": "^8.5.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "react": "^19",
     "react-dom": "^19"
   },
   "dependencies": {
+    "dompurify": "^3.4.12",
     "highlight.js": "^11.11.1",
     "html-entities": "^2.6.0",
     "prosemirror-commands": "^1.7.1",
-    "prosemirror-highlightjs": "^0.9.1",
     "prosemirror-history": "^1.5.0",
     "prosemirror-keymap": "^1.2.3",
     "prosemirror-model": "^1.25.4",

@@ -1,3 +1,4 @@
+/** Converts a browser file into an embeddable data URL for the default uploader. */
 export const base64FileUploader = async (file: File) => {
   const base64 = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();

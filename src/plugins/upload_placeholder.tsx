@@ -1,6 +1,7 @@
 import { EditorState, Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 
+/** Tracks media-upload placeholders as document decorations until uploads complete. */
 export const uploadPlaceholderPlugin = new Plugin({
   state: {
     init() {
@@ -19,7 +20,13 @@ export const uploadPlaceholderPlugin = new Plugin({
         widget.className = "upload-placeholder";
         widget.style.width = `100%`;
 
-        if (type.startsWith("image/") || type.startsWith("video/")) {
+        if (
+          (type.startsWith("image/") || type.startsWith("video/")) &&
+          Number.isFinite(width) &&
+          Number.isFinite(height) &&
+          width > 0 &&
+          height > 0
+        ) {
           widget.style.aspectRatio = `${width} / ${height}`;
           widget.style.maxWidth = `${width}px`;
         } else {
@@ -41,7 +48,7 @@ export const uploadPlaceholderPlugin = new Plugin({
         const found = set.find(
           undefined,
           undefined,
-          (spec) => spec.id === action.progress.id
+          (spec) => spec.id === action.progress.id,
         );
 
         if (found.length) {
@@ -51,12 +58,16 @@ export const uploadPlaceholderPlugin = new Plugin({
           const progress = widget.querySelector(".upload-progress");
 
           if (progress) {
-            progress.innerHTML = `${Math.round(action.progress.progress)}%`;
+            progress.textContent = `${Math.round(action.progress.progress)}%`;
           }
         }
       } else if (action && action.remove) {
         set = set.remove(
-          set.find(undefined, undefined, (spec) => spec.id === action.remove.id)
+          set.find(
+            undefined,
+            undefined,
+            (spec) => spec.id === action.remove.id,
+          ),
         );
       }
 
@@ -70,6 +81,7 @@ export const uploadPlaceholderPlugin = new Plugin({
   },
 });
 
+/** Finds the current document position of an upload placeholder by its opaque id. */
 export const findPlaceholder = (state: EditorState, id: unknown) => {
   const decos = uploadPlaceholderPlugin.getState(state);
 

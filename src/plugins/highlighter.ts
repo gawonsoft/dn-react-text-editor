@@ -1,4 +1,4 @@
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/core";
 import bash from "highlight.js/lib/languages/bash";
 import c from "highlight.js/lib/languages/c";
 import cpp from "highlight.js/lib/languages/cpp";
@@ -41,6 +41,7 @@ hljs.registerLanguage("python", python);
 hljs.registerLanguage("dart", dart);
 hljs.registerLanguage("csharp", csharp);
 
+/** Lists the language identifiers registered on the bundled Highlight.js core. */
 export const supportedLanguages = [
   "bash",
   "c",
@@ -64,4 +65,5 @@ export const supportedLanguages = [
   "csharp",
 ];
 
+/** Exposes the configured Highlight.js instance used by preview rendering. */
 export const highlighter = hljs;

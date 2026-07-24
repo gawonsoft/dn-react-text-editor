@@ -19,7 +19,7 @@ export type GenerateMetadata = (file: File) =>
     };
 
 export type UploadFile = (
-  file: File
+  file: File,
 ) => Promise<{ src: string; alt?: string }> | { src: string; alt?: string };
 
 export type AttachFileOptions = {
@@ -28,13 +28,21 @@ export type AttachFileOptions = {
   uploadFile?: UploadFile;
 };
 
-export type AttachFile = (view: EditorView, files: File[]) => Promise<void>;
+export type AttachFile = (
+  view: EditorView,
+  files: File[],
+  pos?: number,
+) => Promise<void>;
 
+/**
+ * Creates an upload handler that replaces placeholders with image or video nodes.
+ */
 export function createAttachFile({
   schema,
   generateMetadata,
   uploadFile = base64FileUploader,
 }: AttachFileOptions): AttachFile {
+  /** Uploads one file while preserving its insertion position through edits. */
   const attachEachFile = async (view: EditorView, file: File, pos?: number) => {
     const metadata = generateMetadata ? await generateMetadata(file) : {};
 
@@ -72,6 +80,7 @@ export function createAttachFile({
         remove: { id },
       });
 
+      /** Converts a completed upload into the matching schema media node. */
       const createNode = () => {
         if (file.type.startsWith("image/")) {
           return schema.nodes.image.create({
@@ -110,6 +119,7 @@ export function createAttachFile({
     }
   };
 
+  /** Processes files sequentially so each placeholder remains addressable. */
   return async (view: EditorView, files: File[], pos?: number) => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];

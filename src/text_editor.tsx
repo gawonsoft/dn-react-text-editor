@@ -1,9 +1,10 @@
 import {
+  useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
   type DetailedHTMLProps,
-  type InputHTMLAttributes,
+  type HTMLAttributes,
   type Ref,
 } from "react";
 import { useRef } from "react";
@@ -14,16 +15,20 @@ import {
 } from "./text_editor_controller";
 
 type HTMLElementProps = DetailedHTMLProps<
-  InputHTMLAttributes<HTMLInputElement>,
-  HTMLInputElement
+  HTMLAttributes<HTMLDivElement>,
+  HTMLDivElement
 >;
 
-export type TextEditorProps = Omit<HTMLElementProps, "ref" | "onChange"> & {
-  name?: string;
-  ref?: Ref<TextEditorController>;
-  onChange?: Parameters<typeof TextEditorInput>[0]["onChange"];
-} & TextEditorControllerProps;
+export type TextEditorProps = Omit<HTMLElementProps, "ref" | "onChange"> &
+  Omit<TextEditorControllerProps, "className" | "style"> & {
+    editorStyle?: string;
+    name?: string;
+    ref?: Ref<TextEditorController>;
+    value?: string;
+    onChange?: Parameters<typeof TextEditorInput>[0]["onChange"];
+  };
 
+/** Mounts a ProseMirror editor and optionally synchronizes it with a controlled value. */
 export function TextEditor({
   ref,
   name,
@@ -39,9 +44,12 @@ export function TextEditor({
   placeholder,
   attachFile,
   style,
+  editorStyle,
+  value,
   ...props
 }: TextEditorProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const initialDefaultValue = useRef(defaultValue);
 
   const controller = useMemo(
     () =>
@@ -53,11 +61,21 @@ export function TextEditor({
         autoFocus,
         placeholder,
         updateDelay,
-        defaultValue,
+        defaultValue: initialDefaultValue.current,
         attachFile,
-        style,
+        style: editorStyle,
       }),
-    [],
+    [
+      attachFile,
+      autoFocus,
+      editor,
+      editorStyle,
+      mode,
+      placeholder,
+      schema,
+      state,
+      updateDelay,
+    ],
   );
 
   useImperativeHandle(ref, () => controller, [controller]);
@@ -76,9 +94,15 @@ export function TextEditor({
     };
   }, [controller]);
 
+  useEffect(() => {
+    if (value !== undefined && controller.view && controller.value !== value) {
+      controller.value = value;
+    }
+  }, [controller, value]);
+
   return (
     <>
-      <div {...props} ref={containerRef} className={className} />
+      <div {...props} ref={containerRef} className={className} style={style} />
       <TextEditorInput
         name={name}
         controller={controller}

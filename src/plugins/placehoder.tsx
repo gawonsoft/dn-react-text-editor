@@ -3,6 +3,7 @@ import { Plugin } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { uploadPlaceholderPlugin } from "./upload_placeholder";
 
+/** Collects document descendants to distinguish an empty paragraph from real content. */
 const getFirstChildDescendants = (view: EditorView): Node[] => {
   const nodes: Node[] = [];
 
@@ -13,7 +14,9 @@ const getFirstChildDescendants = (view: EditorView): Node[] => {
   return nodes;
 };
 
+/** Creates a plugin that exposes placeholder text through a data attribute on the editor. */
 export function placeholderPlugin(text: string) {
+  /** Updates the placeholder attribute after every view state change. */
   const update = (view: EditorView) => {
     const decos = uploadPlaceholderPlugin.getState(view.state);
 

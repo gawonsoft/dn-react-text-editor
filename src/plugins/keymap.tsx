@@ -4,21 +4,22 @@ import { chainCommands, splitBlockAs } from "prosemirror-commands";
 import type { Schema } from "prosemirror-model";
 import { splitListItem } from "prosemirror-schema-list";
 
+/** Builds editor key bindings for history, block navigation, lists, and code blocks. */
 export function buildKeymap(schema: Schema) {
   const keys: Record<string, Command> = {};
 
+  /** Registers a ProseMirror command under a platform-aware key binding. */
   function bind(key: string, cmd: Command) {
     keys[key] = cmd;
   }
 
-  // undo
+  // Undo and redo use the platform modifier key.
   bind("Mod-z", undo);
 
-  // redo
   bind("Shift-Mod-z", redo);
   bind("Mod-y", redo);
 
-  // ensure paragraph at end of document
+  // Keep a writable paragraph after a terminal non-paragraph block.
   bind("ArrowDown", (state, dispatch) => {
     const doc = state.doc;
 
@@ -52,7 +53,7 @@ export function buildKeymap(schema: Schema) {
     chainCommands(
       splitListItem(li),
       (state, dispatch) => {
-        // default behavior: split block
+        // Split a regular paragraph after list-item handling has declined.
         const { $head } = state.selection;
 
         if ($head.parent.type === state.schema.nodes.paragraph) {
@@ -69,7 +70,7 @@ export function buildKeymap(schema: Schema) {
         return false;
       },
       (state, dispatch) => {
-        // code block indentation
+        // Preserve the current leading whitespace when adding a code-block line.
         const { selection } = state;
         const { $from, $to } = selection;
 
@@ -89,11 +90,11 @@ export function buildKeymap(schema: Schema) {
         }
 
         return false;
-      }
-    )
+      },
+    ),
   );
 
-  // code block indentation
+  // Insert two spaces instead of moving focus when Tab is pressed in code blocks.
   bind("Tab", (state, dispatch) => {
     const { selection } = state;
     const { $from, $to } = selection;

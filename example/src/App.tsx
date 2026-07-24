@@ -1,16 +1,18 @@
 import {
-  createInnerHTML,
+  createTextEditorView,
   TextEditor,
   TextEditorController,
   TextEditorTool,
 } from "gw-react-text-editor";
-import { useRef, type RefObject } from "react";
+import { useRef, useState, type RefObject } from "react";
 import "highlight.js/styles/github.css";
+
+const Preview = createTextEditorView({ className: "preview" });
+const initialValue = "<p>Hello world!</p>";
 
 export default function App() {
   const controllerRef = useRef<TextEditorController>(null);
-
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState(initialValue);
 
   return (
     <div>
@@ -20,12 +22,10 @@ export default function App() {
           ref={controllerRef}
           className="text-editor"
           placeholder="Start typings..."
-          defaultValue={"<p>Hello world!</p>"}
-          onChange={(e) => {
-            previewRef.current!.innerHTML = createInnerHTML(e);
-          }}
+          defaultValue={initialValue}
+          onChange={setPreview}
         />
-        <div ref={previewRef} className="preview" />
+        <Preview dangerouslySetInnerHTML={{ __html: preview }} />
       </div>
     </div>
   );
@@ -64,11 +64,13 @@ function Toolbar({
       <input
         ref={inputRef}
         type="file"
+        accept="image/*,video/*"
         onChange={(e) =>
           withTool((t) => {
             const files = Array.from(e.target.files || []);
 
             t.attachFile(files);
+            e.target.value = "";
           })
         }
         style={{

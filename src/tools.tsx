@@ -4,27 +4,33 @@ import * as schemaList from "prosemirror-schema-list";
 import * as history from "prosemirror-history";
 import type { TextEditorController } from "./text_editor_controller";
 
+/** Provides imperative formatting and history commands for a text editor controller. */
 export class TextEditorTool {
   controller: TextEditorController;
 
+  /** Creates a command facade for the supplied controller. */
   constructor(controller: TextEditorController) {
     this.controller = controller;
   }
 
+  /** Returns the mounted editor view required by ProseMirror commands. */
   protected get view() {
     return this.controller.view!;
   }
 
+  /** Returns the schema used to construct nodes and marks. */
   protected get schema() {
     return this.controller.schema;
   }
 
+  /** Focuses the editor and uploads the supplied media files at the selection. */
   attachFile = (files: File[]) => {
     this.view.focus();
 
     this.controller.attachFile(files);
   };
 
+  /** Inserts a link at the cursor or toggles the link mark across the selection. */
   appendLink = (href?: string) => {
     this.view.focus();
 
@@ -59,6 +65,7 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  /** Reports whether the selection contains a matching block node and attributes. */
   isActiveBlock = (
     node: NodeType,
     attrs?: Attrs | null,
@@ -94,6 +101,7 @@ export class TextEditorTool {
     }
   };
 
+  /** Changes the current block to the named schema node type. */
   setBlockType = (node: string, attrs?: Attrs | null) => {
     this.view.focus();
 
@@ -104,6 +112,7 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  /** Toggles the current block type, restoring a paragraph when it is already active. */
   toggleBlockType = (node: string, attrs?: Attrs | null) => {
     this.view.focus();
 
@@ -121,6 +130,7 @@ export class TextEditorTool {
     }
   };
 
+  /** Toggles a named inline mark across the active selection. */
   toggleMark = (
     mark: string,
     attrs?: Attrs | null,
@@ -139,6 +149,7 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  /** Wraps the active selection in the named container node. */
   wrapIn = (node: string, attrs?: Attrs | null) => {
     this.view.focus();
 
@@ -149,6 +160,7 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  /** Wraps the active selection in an ordered or bullet list. */
   wrapInList = (listType: string, attrs?: Attrs | null) => {
     this.view.focus();
 
@@ -159,6 +171,7 @@ export class TextEditorTool {
     command(this.view.state, this.view.dispatch);
   };
 
+  /** Replaces the active selection with a newly created schema node. */
   replaceSelectionWith = (node: string, attrs?: Attrs | null) => {
     this.view.focus();
 
@@ -169,6 +182,7 @@ export class TextEditorTool {
     this.view.dispatch(tr);
   };
 
+  /** Toggles alignment on the current paragraph or heading. */
   align = (align: "left" | "center" | "right" | "justify") => {
     this.view.focus();
 
@@ -193,6 +207,7 @@ export class TextEditorTool {
     this.view.dispatch(tr);
   };
 
+  /** Replaces the document with the schema's empty document content. */
   clear = () => {
     const tr = this.view.state.tr.replaceWith(
       0,
@@ -203,12 +218,14 @@ export class TextEditorTool {
     this.view.dispatch(tr);
   };
 
+  /** Applies the most recent undoable history transaction. */
   undo = () => {
     this.view.focus();
 
     history.undo(this.view.state, this.view.dispatch);
   };
 
+  /** Reapplies the most recently undone history transaction. */
   redo = () => {
     this.view.focus();
 

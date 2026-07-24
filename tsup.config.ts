@@ -1,10 +1,10 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-    entry: ["src/**/*.ts", "src/**/*.tsx"],
-    format: ["cjs", "esm"],
-    dts: true,
-    splitting: false,
-    clean: true,
-    external: ["*.css"],
+  entry: ["src/index.ts", "src/prosemirror/index.ts"],
+  format: ["cjs", "esm"],
+  dts: true,
+  splitting: false,
+  clean: true,
+  external: ["*.css"],
 });
