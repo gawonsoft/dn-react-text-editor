@@ -1,7 +1,5 @@
 import { DOMParser, DOMSerializer } from "prosemirror-model";
-import { EditorState, type Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { createAttachFile } from "../attach_file";
 import {
   editorChangeOriginKey,
   type EditorChangeOrigin,
@@ -10,18 +8,31 @@ import {
 import { createSchema } from "../schema";
 import { TextEditorTool } from "../tools";
 import {
+  resolveEditorMarks,
+  resolveEditorNodes,
+  type EditorMark,
+  type EditorNode,
+  type EditorElementValue,
+} from "../elements";
+import {
   parseEditorValue,
   serializeHTML,
   serializeText,
   toInnerHTML,
 } from "./document";
-import { createEditorAttributes, createEditorPlugins } from "./plugins";
+import { createEditorAttributes } from "./plugins";
+import { dispatchEditorTransaction } from "./changes";
 import type { TextEditorControllerProps } from "./types";
+import { attachFiles, cancelTrackedUploads } from "./uploads";
+import { insertEditorElement } from "./element_actions";
+import { createEditorView } from "./view";
 /** Owns one stable ProseMirror view and exposes only high-level editor operations. */
 export class TextEditorController {
-  readonly #schema = createSchema();
-  readonly #parser = DOMParser.fromSchema(this.#schema);
-  readonly #serializer = DOMSerializer.fromSchema(this.#schema);
+  readonly #nodes: readonly EditorNode[];
+  readonly #marks: readonly EditorMark[];
+  readonly #schema;
+  readonly #parser;
+  readonly #serializer;
   readonly #listeners = new Set<(change: TextEditorChange) => void>();
   readonly #uploads = new Set<AbortController>();
   #props: TextEditorControllerProps;
@@ -32,14 +43,17 @@ export class TextEditorController {
   /** Creates a controller whose schema remains the single source of truth. */
   constructor(props: TextEditorControllerProps = {}) {
     this.#props = props;
+    this.#nodes = resolveEditorNodes(props.nodes);
+    this.#marks = resolveEditorMarks(props.marks);
+    this.#schema = createSchema(this.#nodes, this.#marks);
+    this.#parser = DOMParser.fromSchema(this.#schema);
+    this.#serializer = DOMSerializer.fromSchema(this.#schema);
     this.commands = new TextEditorTool(this);
   }
-
   /** Reports whether the controller currently owns a mounted editor view. */
   get isBound() {
     return this.#view !== undefined;
   }
-
   /** Serializes the current document according to the configured output mode. */
   get value(): string {
     if (!this.#view) {
@@ -48,23 +62,19 @@ export class TextEditorController {
 
     return this.#props.mode === "text" ? this.toTextContent() : this.toHTML();
   }
-
   /** Replaces editor content as an externally controlled value update. */
   set value(value: string) {
     this.setValue(value, "external");
   }
-
   /** Subscribes to read-only document change events and returns an unsubscribe function. */
   subscribe(listener: (change: TextEditorChange) => void) {
     this.#listeners.add(listener);
     return () => this.#listeners.delete(listener);
   }
-
   /** Returns the configured debounce delay for value-change notifications. */
   getChangeDelay() {
     return this.#props.onChangeDelay ?? 0;
   }
-
   /** Updates presentation-only options without recreating the document or view. */
   updateOptions(
     options: Pick<TextEditorControllerProps, "className" | "style">,
@@ -74,12 +84,10 @@ export class TextEditorController {
       attributes: () => createEditorAttributes(this.#props),
     });
   }
-
   /** Converts external text or HTML into safe markup for ProseMirror parsing. */
   toInnerHTML(value: string) {
     return toInnerHTML(value, this.#props.mode);
   }
-
   /** Replaces the document and tags the resulting change with its origin. */
   setValue(value: string, origin: EditorChangeOrigin = "external") {
     if (!this.#view || this.value === value) {
@@ -100,27 +108,27 @@ export class TextEditorController {
 
   /** Queues media uploads and keeps cancellation handles until they complete. */
   async attachFile(files: File[], pos?: number) {
-    const abortController = new AbortController();
-    this.#uploads.add(abortController);
-
-    try {
-      await createAttachFile({
-        schema: this.#schema,
-        upload: this.#props.upload,
-        onError: this.#props.onUploadError,
-      })(this.getView(), files, pos, abortController.signal);
-    } finally {
-      this.#uploads.delete(abortController);
-    }
+    await attachFiles({
+      schema: this.#schema,
+      view: this.getView(),
+      files,
+      pos,
+      uploads: this.#uploads,
+      upload: this.#props.upload,
+      onError: this.#props.onUploadError,
+    });
   }
 
+  /** Inserts a value created by a registered high-level editor element. */
+  insertElement(value: EditorElementValue) {
+    this.runCommand(() =>
+      insertEditorElement(this.getView(), this.#schema, value),
+    );
+  }
   /** Cancels every in-flight media upload owned by this editor. */
   cancelUploads() {
-    for (const upload of this.#uploads) {
-      upload.abort();
-    }
+    cancelTrackedUploads(this.#uploads);
   }
-
   /** Runs an imperative command and labels its document change as a command event. */
   runCommand(callback: () => void) {
     this.#nextOrigin = "command";
@@ -137,27 +145,17 @@ export class TextEditorController {
       return;
     }
 
-    this.#view = new EditorView(
-      { mount: element },
-      {
-        attributes: () => createEditorAttributes(this.#props),
-        state: EditorState.create({
-          schema: this.#schema,
-          doc: parseEditorValue(
-            this.#parser,
-            this.#props.defaultValue || "",
-            this.#props.mode,
-          ),
-          plugins: createEditorPlugins({
-            schema: this.#schema,
-            props: this.#props,
-            attachFile: (_view, files, pos) => this.attachFile(files, pos),
-          }),
-        }),
-        dispatchTransaction: (transaction) =>
-          this.dispatchTransaction(transaction),
-      },
-    );
+    this.#view = createEditorView({
+      mount: element,
+      schema: this.#schema,
+      parser: this.#parser,
+      props: this.#props,
+      nodes: this.#nodes,
+      marks: this.#marks,
+      attachFile: (_view, files, pos) => this.attachFile(files, pos),
+      dispatchTransaction: (transaction) =>
+        this.dispatchTransaction(transaction),
+    });
 
     if (this.#props.autoFocus) {
       this.#view.focus();
@@ -190,28 +188,16 @@ export class TextEditorController {
     this.#listeners.clear();
   }
 
-  private dispatchTransaction(transaction: Transaction) {
+  private dispatchTransaction(
+    transaction: import("prosemirror-state").Transaction,
+  ) {
     const view = this.getView();
-    view.updateState(view.state.apply(transaction));
-
-    if (!transaction.docChanged) {
-      return;
-    }
-
-    const origin =
-      (transaction.getMeta(editorChangeOriginKey) as
-        | EditorChangeOrigin
-        | undefined) ??
-      this.#nextOrigin ??
-      "user";
-    const change: TextEditorChange = {
-      value: this.value,
-      origin,
-      docChanged: true,
-    };
-
-    for (const listener of this.#listeners) {
-      listener(change);
-    }
+    dispatchEditorTransaction({
+      view,
+      transaction,
+      nextOrigin: this.#nextOrigin,
+      value: () => this.value,
+      listeners: this.#listeners,
+    });
   }
 }

@@ -29,12 +29,7 @@ export function dragAndDropPlugin({ attachFile }: { attachFile?: AttachFile }) {
             return;
           }
 
-          const medias = Array.from(files).filter(
-            (file) =>
-              file.type.startsWith("image/") || file.type.startsWith("video/"),
-          );
-
-          attachFile(view, medias, pos);
+          attachFile(view, Array.from(files), pos);
 
           return true;
         },

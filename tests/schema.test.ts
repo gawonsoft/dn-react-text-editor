@@ -37,4 +37,11 @@ describe("createSchema", () => {
       referrerPolicy: "no-referrer",
     });
   });
+
+  it("parses hard breaks through the inline element registry", () => {
+    const document = parseHTML("<p>First<br>Second</p>");
+
+    expect(document.firstChild?.childCount).toBe(3);
+    expect(document.firstChild?.child(1).type.name).toBe("hard_break");
+  });
 });

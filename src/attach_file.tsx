@@ -6,6 +6,7 @@ import {
 import { createSchema } from "./schema";
 import { base64FileUploader } from "./base64_file_uploader";
 import { editorChangeOriginKey } from "./events";
+import type { EditorElementAttributes, EditorElementValue } from "./elements";
 import type { UploadAdapter } from "./upload";
 
 export type AttachFileOptions = {
@@ -20,6 +21,21 @@ export type AttachFile = (
   pos?: number,
   signal?: AbortSignal,
 ) => Promise<void>;
+
+function createUploadedNode(
+  schema: ReturnType<typeof createSchema>,
+  result: EditorElementValue,
+) {
+  const nodeType = schema.nodes[result.type];
+
+  if (!nodeType) {
+    throw new Error(
+      `The uploaded element type is not registered: ${result.type}`,
+    );
+  }
+
+  return nodeType.create(result.attributes as EditorElementAttributes);
+}
 
 /**
  * Creates an upload handler that replaces placeholders with image or video nodes.
@@ -82,38 +98,11 @@ export function createAttachFile({
           })
         : await base64FileUploader(file);
 
-      const { src, alt } = result;
-
       const tr = view.state.tr
         .setMeta(editorChangeOriginKey, "upload")
         .setMeta(uploadPlaceholderPlugin, { remove: { id } });
 
-      /** Converts a completed upload into the matching schema media node. */
-      const createNode = () => {
-        if (file.type.startsWith("image/")) {
-          return schema.nodes.image.create({
-            src,
-            alt,
-            width: metadata.width,
-            height: metadata.height,
-          });
-        }
-
-        if (file.type.startsWith("video/")) {
-          return schema.nodes.video.create({
-            src,
-            width: metadata.width,
-            height: metadata.height,
-            poster: metadata.poster,
-          });
-        }
-      };
-
-      const node = createNode();
-
-      if (!node) {
-        return;
-      }
+      const node = createUploadedNode(schema, result);
 
       const current = view.state.doc.resolve($pos);
 

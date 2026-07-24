@@ -57,6 +57,8 @@ Provide baseline styles for the editor surface in your application:
 | `onValueChange`     | `(change: TextEditorChange) => void` | Read-only event with a `user`, `external`, or `command` origin.      |
 | `onChangeDelay`     | `number`                             | Delay in milliseconds before change callbacks run.                   |
 | `historyGroupDelay` | `number`                             | History grouping delay, independent from `onChangeDelay`.            |
+| `nodes`             | `EditorNode[]`                       | Adds or overrides atomic and container nodes by `type`.              |
+| `marks`             | `EditorMark[]`                       | Adds or overrides inline text marks by `type`.                       |
 | `upload`            | `UploadAdapter`                      | Storage integration with cancellation, progress, and error handling. |
 | `editorStyle`       | `string`                             | Inline CSS applied to the ProseMirror editor element.                |
 
@@ -112,9 +114,10 @@ export function EditorWithToolbar() {
 
 ### Attach Files
 
-Call `editorRef.current?.attachFile()` with browser `File` objects to insert images or videos
-at the current selection. The default uploader embeds data URLs; use the
-[`upload`](#file-uploads) prop for production storage.
+Call `editorRef.current?.attachFile()` with browser `File` objects to insert
+images or videos at the current selection. The default uploader embeds data
+URLs; use the [`upload`](#file-uploads) prop for production storage or custom
+file elements.
 
 ```tsx
 function attachFiles(files: FileList | null) {
@@ -131,8 +134,9 @@ example when closing an editor modal.
 
 ## File Uploads
 
-When no uploader is supplied, images and videos are embedded as data URLs. For
-production, pass an uploader that returns a durable URL:
+When no uploader is supplied, images and videos are embedded as data URLs. An
+uploader returns a value created by a registered element. For the default image
+element, pass every declared attribute:
 
 ```tsx
 <TextEditor
@@ -140,7 +144,15 @@ production, pass an uploader that returns a durable URL:
     async upload(file, { signal, onProgress }) {
       const response = await uploadToStorage(file);
       onProgress(100);
-      return { src: response.url, alt: file.name };
+      return imageElement.create({
+        src: response.url,
+        alt: file.name,
+        title: null,
+        width: null,
+        height: null,
+        srcSet: null,
+        sizes: null,
+      });
     },
     async getMetadata(file, signal) {
       return readMediaDimensions(file);
@@ -151,6 +163,123 @@ production, pass an uploader that returns a durable URL:
   }}
 />
 ```
+
+## Custom Nodes And Marks
+
+`defineEditorElement` defines an atomic node such as a file, image, or product
+card. Set `display: "inline"` for an atomic inline node such as a custom hard
+break; the built-in `hardBreakElement` uses this mode. `defineEditorContainer`
+defines a node with editable content, such as a callout or heading.
+`defineEditorMark` defines an inline text mark. Register
+the same nodes with `TextEditor` and `createTextEditorView`; the editor schema
+and preview then share the same HTML round-trip contract. A matching built-in
+node or mark type overrides its default definition. For atomic elements,
+`render` can be the sole HTML source: its one root element is statically
+rendered for storage, so it must include the attributes read by `selector` and
+`parse`. Use `serialize` when the saved representation must differ from the
+interactive React UI.
+
+```tsx
+import {
+  defineEditorElement,
+  defineEditorContainer,
+  defineEditorMark,
+  imageElement,
+  TextEditor,
+} from "gw-rich-text-editor";
+import { createTextEditorView } from "gw-rich-text-editor/preview";
+
+const fileElement = defineEditorElement({
+  type: "file",
+  display: "inline",
+  attributes: { href: "", name: "", size: null as number | null },
+  selector: 'a[data-editor-element="file"]',
+  parse(element) {
+    return {
+      href: element.dataset.href || "",
+      name: element.dataset.name || "",
+      size: element.dataset.size ? Number(element.dataset.size) : null,
+    };
+  },
+  render({ href, name, size }) {
+    return (
+      <a
+        className="download-card"
+        data-editor-element="file"
+        data-href={href}
+        data-name={name}
+        data-size={size}
+        href={href}
+        download={name}
+      >
+        {name} {size ? `(${Math.ceil(size / 1024)} KB)` : null}
+      </a>
+    );
+  },
+});
+
+const calloutNode = defineEditorContainer({
+  type: "callout",
+  attributes: { tone: "info" },
+  selector: "aside[data-callout]",
+  content: "inline*",
+  group: "block",
+  parse: (element) => ({ tone: element.dataset.tone || "info" }),
+  serialize: ({ tone }) => ({
+    tag: "aside",
+    attributes: { "data-callout": "true", "data-tone": tone },
+  }),
+  render: ({ tone }, Content) => (
+    <aside className={`callout callout-${tone}`}>
+      <Content />
+    </aside>
+  ),
+});
+
+const highlightMark = defineEditorMark({
+  type: "highlight",
+  attributes: { color: "yellow" },
+  selectors: ["mark[data-highlight]"],
+  parse: (element) => ({ color: element.dataset.color || "yellow" }),
+  serialize: ({ color }) => ({
+    tag: "mark",
+    attributes: { "data-highlight": "true", "data-color": color },
+  }),
+  render: ({ color }, Content) => (
+    <mark data-color={color}>
+      <Content />
+    </mark>
+  ),
+});
+
+const Preview = createTextEditorView({
+  nodes: [fileElement, calloutNode],
+  marks: [highlightMark],
+});
+
+<TextEditor
+  nodes={[fileElement, calloutNode]}
+  marks={[highlightMark]}
+  upload={{
+    async upload(file, { onProgress }) {
+      const stored = await uploadToStorage(file);
+      onProgress(100);
+      return fileElement.create({
+        href: stored.url,
+        name: file.name,
+        size: file.size,
+      });
+    },
+  }}
+/>;
+```
+
+Call `controller.insertElement(fileElement.create(...))` to insert a registered
+atomic node without an upload. Container and mark renderers receive a
+package-managed `Content` slot; do not replace it with manually rendered text.
+The HTML `download` attribute only guarantees a
+download for same-origin or Blob URLs; configure `Content-Disposition:
+attachment` on cross-origin storage URLs when a download must be forced.
 
 ## Safe Previews
 
@@ -164,6 +293,16 @@ import "highlight.js/styles/github.css";
 const ArticlePreview = createTextEditorView({ className: "article-preview" });
 
 <ArticlePreview dangerouslySetInnerHTML={{ __html: value }} />;
+```
+
+The preview bundles JavaScript, TypeScript, JSON, HTML/XML, and CSS highlighting.
+Register other Highlight.js languages only when the application needs them:
+
+```tsx
+import python from "highlight.js/lib/languages/python";
+import { registerHighlightLanguage } from "gw-rich-text-editor/preview";
+
+registerHighlightLanguage("python", python);
 ```
 
 Sanitization protects the bundled preview component. Apply your application's
