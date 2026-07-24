@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import { describe, expect, it } from "vitest";
-import { createInnerHTML } from "../src/html";
+import { createInnerHTML } from "../src/preview";
 
 describe("createInnerHTML", () => {
   it("removes executable HTML and unsafe iframe URLs", () => {

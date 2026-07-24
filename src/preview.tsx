@@ -1,37 +1,8 @@
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
-import DOMPurify from "dompurify";
-import { highlighter } from "./plugins/highlighter";
 import { decode } from "html-entities";
 import { cn } from "./cn";
-
-const sanitizerOptions = {
-  ADD_TAGS: ["iframe", "video"],
-  ADD_ATTR: [
-    "allow",
-    "allowfullscreen",
-    "controls",
-    "frameborder",
-    "playsinline",
-    "poster",
-    "referrerpolicy",
-  ],
-  ADD_DATA_URI_TAGS: ["video"],
-};
-
-/** Sanitizes editor HTML while retaining the supported media elements and attributes. */
-export function sanitizeHTML(raw: string) {
-  return DOMPurify.sanitize(raw, sanitizerOptions);
-}
-
-/** Escapes text before it is inserted into an HTML string. */
-export function escapeHTML(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+import { highlighter } from "./plugins/highlighter";
+import { escapeHTML, sanitizeHTML } from "./sanitizer";
 
 /**
  * Sanitizes editor output, highlights code blocks, and hardens external links
@@ -54,7 +25,7 @@ export function createInnerHTML(raw: string) {
           return language
             ? `<code class="language-${language}">${value}</code>`
             : `<code>${value}</code>`;
-        } catch (e) {
+        } catch {
           return `<code class="language-${lang}">${escapeHTML(decode(code))}</code>`;
         }
       },
@@ -80,7 +51,7 @@ export function createTextEditorView(options: { className?: string } = {}) {
     return (
       <div
         {...props}
-        className={cn(options?.className, className)}
+        className={cn(options.className, className)}
         dangerouslySetInnerHTML={{
           __html: createInnerHTML(
             String(dangerouslySetInnerHTML?.__html || ""),

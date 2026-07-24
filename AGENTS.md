@@ -2,13 +2,15 @@
 
 ## Scope
 
-This package exposes a React 19 rich-text editor and a ProseMirror subpath
-export. Keep public API changes backward compatible unless the task explicitly
-calls for a breaking release.
+This package exposes a high-level React 19 rich-text editor. Keep public API
+changes backward compatible unless the task explicitly calls for a breaking release.
 
 ## Layout
 
 - `src/`: library implementation and public exports from `src/index.ts`.
+- `src/editor/`: controller lifecycle, option types, document conversion, and plugins.
+- `src/commands/`: internal command facade and focused formatting/block/history operations.
+- `src/schema/`: node, mark, attribute, and schema factory definitions.
 - `tests/`: Vitest regression tests; use JSDOM for DOM-dependent behavior.
 - `example/`: Vite consumer application for manual verification.
 - `.github/workflows/publish.yaml`: npm publishing workflow.

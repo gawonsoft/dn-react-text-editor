@@ -5,33 +5,20 @@ import {
 } from "./plugins/upload_placeholder";
 import { createSchema } from "./schema";
 import { base64FileUploader } from "./base64_file_uploader";
-
-export type GenerateMetadata = (file: File) =>
-  | Promise<{
-      width?: number;
-      height?: number;
-      poster?: string;
-    }>
-  | {
-      width?: number;
-      height?: number;
-      poster?: string;
-    };
-
-export type UploadFile = (
-  file: File,
-) => Promise<{ src: string; alt?: string }> | { src: string; alt?: string };
+import { editorChangeOriginKey } from "./events";
+import type { UploadAdapter } from "./upload";
 
 export type AttachFileOptions = {
   schema: ReturnType<typeof createSchema>;
-  generateMetadata?: GenerateMetadata;
-  uploadFile?: UploadFile;
+  upload?: UploadAdapter;
+  onError?: (error: unknown, file: File) => void;
 };
 
 export type AttachFile = (
   view: EditorView,
   files: File[],
   pos?: number,
+  signal?: AbortSignal,
 ) => Promise<void>;
 
 /**
@@ -39,12 +26,19 @@ export type AttachFile = (
  */
 export function createAttachFile({
   schema,
-  generateMetadata,
-  uploadFile = base64FileUploader,
+  upload,
+  onError,
 }: AttachFileOptions): AttachFile {
   /** Uploads one file while preserving its insertion position through edits. */
-  const attachEachFile = async (view: EditorView, file: File, pos?: number) => {
-    const metadata = generateMetadata ? await generateMetadata(file) : {};
+  const attachEachFile = async (
+    view: EditorView,
+    file: File,
+    pos?: number,
+    signal = new AbortController().signal,
+  ) => {
+    const metadata = upload?.getMetadata
+      ? await upload.getMetadata(file, signal)
+      : {};
 
     const id = {};
 
@@ -56,6 +50,7 @@ export function createAttachFile({
       tr.deleteSelection();
     }
 
+    tr.setMeta(editorChangeOriginKey, "upload");
     tr.setMeta(uploadPlaceholderPlugin, {
       add: {
         id,
@@ -74,11 +69,24 @@ export function createAttachFile({
     }
 
     try {
-      const { src, alt } = await uploadFile(file);
+      const result = upload
+        ? await upload.upload(file, {
+            signal,
+            onProgress(progress) {
+              view.dispatch(
+                view.state.tr.setMeta(uploadPlaceholderPlugin, {
+                  progress: { id, progress },
+                }),
+              );
+            },
+          })
+        : await base64FileUploader(file);
 
-      const tr = view.state.tr.setMeta(uploadPlaceholderPlugin, {
-        remove: { id },
-      });
+      const { src, alt } = result;
+
+      const tr = view.state.tr
+        .setMeta(editorChangeOriginKey, "upload")
+        .setMeta(uploadPlaceholderPlugin, { remove: { id } });
 
       /** Converts a completed upload into the matching schema media node. */
       const createNode = () => {
@@ -114,17 +122,32 @@ export function createAttachFile({
       } else {
         view.dispatch(tr.replaceWith($pos, $pos, node));
       }
-    } catch (e) {
-      view.dispatch(tr.setMeta(uploadPlaceholderPlugin, { remove: { id } }));
+    } catch (error) {
+      view.dispatch(
+        tr
+          .setMeta(editorChangeOriginKey, "upload")
+          .setMeta(uploadPlaceholderPlugin, { remove: { id } }),
+      );
+      upload?.onError?.(error, file);
+      onError?.(error, file);
     }
   };
 
   /** Processes files sequentially so each placeholder remains addressable. */
-  return async (view: EditorView, files: File[], pos?: number) => {
+  return async (
+    view: EditorView,
+    files: File[],
+    pos?: number,
+    signal?: AbortSignal,
+  ) => {
     for (let i = 0; i < files.length; i++) {
+      if (signal?.aborted) {
+        return;
+      }
+
       const file = files[i];
 
-      await attachEachFile(view, file, pos);
+      await attachEachFile(view, file, pos, signal);
     }
   };
 }

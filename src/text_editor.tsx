@@ -26,6 +26,7 @@ export type TextEditorProps = Omit<HTMLElementProps, "ref" | "onChange"> &
     ref?: Ref<TextEditorController>;
     value?: string;
     onChange?: Parameters<typeof TextEditorInput>[0]["onChange"];
+    onValueChange?: Parameters<typeof TextEditorInput>[0]["onValueChange"];
   };
 
 /** Mounts a ProseMirror editor and optionally synchronizes it with a controlled value. */
@@ -35,48 +36,39 @@ export function TextEditor({
   className,
   autoFocus,
   onChange,
-  schema,
   mode,
-  state,
-  editor,
   defaultValue,
-  updateDelay,
   placeholder,
-  attachFile,
+  upload,
+  onUploadError,
+  onChangeDelay,
+  historyGroupDelay,
   style,
   editorStyle,
   value,
+  onValueChange,
   ...props
 }: TextEditorProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const initialDefaultValue = useRef(defaultValue);
+  const controllerRef = useRef<TextEditorController>(null);
 
-  const controller = useMemo(
-    () =>
-      new TextEditorController({
-        schema,
-        mode,
-        state,
-        editor,
-        autoFocus,
-        placeholder,
-        updateDelay,
-        defaultValue: initialDefaultValue.current,
-        attachFile,
-        style: editorStyle,
-      }),
-    [
-      attachFile,
-      autoFocus,
-      editor,
-      editorStyle,
+  if (!controllerRef.current) {
+    controllerRef.current = new TextEditorController({
       mode,
+      autoFocus,
       placeholder,
-      schema,
-      state,
-      updateDelay,
-    ],
-  );
+      onChangeDelay,
+      historyGroupDelay,
+      defaultValue: initialDefaultValue.current,
+      upload,
+      onUploadError,
+      className,
+      style: editorStyle,
+    });
+  }
+
+  const controller = controllerRef.current;
 
   useImperativeHandle(ref, () => controller, [controller]);
 
@@ -95,7 +87,15 @@ export function TextEditor({
   }, [controller]);
 
   useEffect(() => {
-    if (value !== undefined && controller.view && controller.value !== value) {
+    controller.updateOptions({ className, style: editorStyle });
+  }, [className, controller, editorStyle]);
+
+  useEffect(() => {
+    if (
+      value !== undefined &&
+      controller.isBound &&
+      controller.value !== value
+    ) {
       controller.value = value;
     }
   }, [controller, value]);
@@ -107,6 +107,8 @@ export function TextEditor({
         name={name}
         controller={controller}
         onChange={onChange}
+        onValueChange={onValueChange}
+        initialValue={initialDefaultValue.current || ""}
       />
     </>
   );

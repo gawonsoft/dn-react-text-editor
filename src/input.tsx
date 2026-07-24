@@ -4,7 +4,7 @@ import {
   type DetailedHTMLProps,
   type HTMLAttributes,
 } from "react";
-import { debounceTime, filter } from "rxjs";
+import type { TextEditorChange } from "./events";
 import type { TextEditorController } from "./text_editor_controller";
 
 type Props = Omit<
@@ -13,40 +13,59 @@ type Props = Omit<
 > & {
   controller: TextEditorController;
   name?: string;
+  initialValue?: string;
   onChange?: (value: string) => void;
+  onValueChange?: (change: TextEditorChange) => void;
 };
 
 /** Keeps a hidden form input and change callback synchronized with editor transactions. */
-export function TextEditorInput({ controller, onChange, ...props }: Props) {
+export function TextEditorInput({
+  controller,
+  initialValue = "",
+  onChange,
+  onValueChange,
+  ...props
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const sub = controller.subject
-      .pipe(
-        filter((tr) => tr.docChanged),
-        debounceTime(controller.props.updateDelay || 0),
-      )
-      .subscribe(() => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = controller.subscribe((change) => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
         const input = inputRef.current;
 
-        if (!input) return;
+        if (!input) {
+          return;
+        }
 
-        input.value = controller.value;
+        input.value = change.value;
+        onValueChange?.(change);
 
-        onChange?.(controller.value);
-      });
+        if (change.origin !== "external") {
+          onChange?.(change.value);
+        }
+      }, controller.getChangeDelay());
+    });
 
     return () => {
-      sub.unsubscribe();
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      unsubscribe();
     };
-  }, [controller, onChange]);
+  }, [controller, onChange, onValueChange]);
 
   return (
     <input
       {...props}
       ref={inputRef}
       type="hidden"
-      defaultValue={controller.props.defaultValue}
+      defaultValue={initialValue}
     />
   );
 }

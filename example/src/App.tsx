@@ -1,9 +1,5 @@
-import {
-  createTextEditorView,
-  TextEditor,
-  TextEditorController,
-  TextEditorTool,
-} from "gw-react-text-editor";
+import { TextEditor, TextEditorController } from "gw-react-text-editor";
+import { createTextEditorView } from "gw-react-text-editor/preview";
 import { useRef, useState, type RefObject } from "react";
 import "highlight.js/styles/github.css";
 
@@ -38,24 +34,21 @@ function Toolbar({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const withTool = (fn: (tool: TextEditorTool) => void) => {
-    if (controller.current) {
-      fn(new TextEditorTool(controller.current));
-    }
-  };
-
   return (
     <div className="toolbar">
-      <button type="button" onClick={() => withTool((t) => t.undo())}>
+      <button type="button" onClick={() => controller.current?.commands.undo()}>
         Undo
       </button>
-      <button type="button" onClick={() => withTool((t) => t.redo())}>
+      <button type="button" onClick={() => controller.current?.commands.redo()}>
         Redo
       </button>
-      <button type="button" onClick={() => withTool((t) => t.clear())}>
+      <button
+        type="button"
+        onClick={() => controller.current?.commands.clear()}
+      >
         Clear
       </button>
-      <button type="button" onClick={() => withTool((t) => t.appendLink())}>
+      <button type="button" onClick={() => controller.current?.commands.link()}>
         Link
       </button>
       <button type="button" onClick={() => inputRef.current?.click()}>
@@ -65,57 +58,35 @@ function Toolbar({
         ref={inputRef}
         type="file"
         accept="image/*,video/*"
-        onChange={(e) =>
-          withTool((t) => {
-            const files = Array.from(e.target.files || []);
-
-            t.attachFile(files);
-            e.target.value = "";
-          })
-        }
+        onChange={(e) => {
+          controller.current?.attachFile(Array.from(e.target.files || []));
+          e.target.value = "";
+        }}
         style={{
           display: "none",
         }}
       />
       <button
         type="button"
-        onClick={() =>
-          withTool((t) => {
-            t.toggleBlockType("heading", {
-              level: 1,
-            });
-          })
-        }
+        onClick={() => controller.current?.commands.heading(1)}
       >
         H1
       </button>
       <button
         type="button"
-        onClick={() =>
-          withTool((t) => {
-            t.wrapInList("ordered_list");
-          })
-        }
+        onClick={() => controller.current?.commands.orderedList()}
       >
         Ordered List
       </button>
       <button
         type="button"
-        onClick={() =>
-          withTool((t) => {
-            t.wrapInList("bullet_list");
-          })
-        }
+        onClick={() => controller.current?.commands.bulletList()}
       >
         Bullet List
       </button>
       <button
         type="button"
-        onClick={() =>
-          withTool((t) => {
-            t.setBlockType("code_block");
-          })
-        }
+        onClick={() => controller.current?.commands.codeBlock()}
       >
         Code Block
       </button>
