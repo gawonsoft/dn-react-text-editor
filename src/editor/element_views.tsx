@@ -41,7 +41,9 @@ class ReactElementNodeView implements NodeView {
 
   private render(node: ProseMirrorNode) {
     this.#root.render(
-      this.element.render?.(node.attrs as EditorElementAttributes),
+      this.element.render(node.attrs as EditorElementAttributes, {
+        textContent: node.textContent,
+      }),
     );
   }
 }
@@ -71,12 +73,19 @@ class ReactContainerNodeView implements NodeView {
 
   private render(node: ProseMirrorNode) {
     const slotRef = createRef<HTMLElement>();
-    const Content: EditorContentSlot = ({ as = "div" } = {}) =>
-      createElement(as, { ref: slotRef });
+    const Content: EditorContentSlot = ({
+      as = "div",
+      html: _html,
+      ...props
+    } = {}) => createElement(as, { ...props, ref: slotRef });
 
     flushSync(() => {
       this.#root.render(
-        this.container.render?.(node.attrs as EditorElementAttributes, Content),
+        this.container.render(
+          node.attrs as EditorElementAttributes,
+          Content,
+          { textContent: node.textContent },
+        ),
       );
     });
     this.contentDOM = slotRef.current || undefined;
@@ -88,7 +97,7 @@ export function createElementNodeViews(nodes: readonly EditorNode[]) {
   const atomic = nodes
     .filter(
       (node): node is Extract<EditorNode, { kind: "atomic" }> =>
-        node.kind === "atomic" && Boolean(node.render),
+        node.kind === "atomic",
     )
     .map((node) => [
       node.type,
@@ -96,8 +105,7 @@ export function createElementNodeViews(nodes: readonly EditorNode[]) {
     ]);
   const containers = nodes
     .filter(
-      (node): node is EditorContainer =>
-        node.kind === "container" && Boolean(node.render),
+      (node): node is EditorContainer => node.kind === "container",
     )
     .map((node) => [
       node.type,

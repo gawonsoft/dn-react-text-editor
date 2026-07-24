@@ -29,12 +29,6 @@ export const imageElement = defineEditorElement({
       sizes: element.getAttribute("sizes"),
     };
   },
-  serialize({ src, alt, title, width, height, srcSet, sizes }) {
-    return {
-      tag: "img",
-      attributes: { src, alt, title, width, height, srcset: srcSet, sizes },
-    };
-  },
   render({ alt, title, width, height, srcSet, sizes, ...attributes }) {
     return (
       <img
@@ -62,20 +56,6 @@ export const videoElement = defineEditorElement({
       width: getNumericAttribute(element, "width"),
       height: getNumericAttribute(element, "height"),
       poster: element.getAttribute("poster"),
-    };
-  },
-  serialize({ src, title, width, height, poster }) {
-    return {
-      tag: "video",
-      attributes: {
-        src,
-        title,
-        width,
-        height,
-        poster,
-        playsinline: true,
-        controls: true,
-      },
     };
   },
   render({ width, height, poster, title, ...attributes }) {
@@ -116,16 +96,6 @@ export const iframeElement = defineEditorElement({
       style: element.getAttribute("style"),
     };
   },
-  serialize(attributes) {
-    return {
-      tag: "iframe",
-      attributes: {
-        ...attributes,
-        referrerpolicy: attributes.referrerPolicy,
-        frameborder: 0,
-      },
-    };
-  },
   render({
     width,
     height,
@@ -147,6 +117,7 @@ export const iframeElement = defineEditorElement({
           referrerPolicy as React.HTMLAttributeReferrerPolicy | undefined
         }
         allowFullScreen={allowfullscreen === "true"}
+        frameBorder={0}
       />
     );
   },
@@ -160,8 +131,8 @@ export const horizontalRuleElement = defineEditorElement({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "hr" };
+  render() {
+    return <hr />;
   },
 });
 
@@ -174,8 +145,8 @@ export const hardBreakElement = defineEditorElement({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "br" };
+  render() {
+    return <br />;
   },
 });
 

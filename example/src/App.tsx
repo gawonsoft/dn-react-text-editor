@@ -3,9 +3,42 @@ import {
   TextEditor,
   TextEditorController,
 } from "gw-rich-text-editor";
-import { createTextEditorView } from "gw-rich-text-editor/preview";
+import { TextEditorView } from "gw-rich-text-editor/view";
 import { useRef, useState, type RefObject } from "react";
 import "highlight.js/styles/github.css";
+
+const initialValue = "<p>Hello world!</p>";
+
+export default function App() {
+  const controllerRef = useRef<TextEditorController>(null);
+  const [content, setContent] = useState(initialValue);
+
+  return (
+    <div>
+      <Toolbar controller={controllerRef} />
+      <div className="app">
+        <TextEditor
+          ref={controllerRef}
+          className="text-editor"
+          placeholder="Start typings..."
+          defaultValue={initialValue}
+          nodes={[fileElement]}
+          upload={{
+            async upload(file, { onProgress }) {
+              onProgress(100);
+              return fileElement.create({
+                href: URL.createObjectURL(file),
+                name: file.name,
+              });
+            },
+          }}
+          onChange={setContent}
+        />
+        <TextEditorView className="text-editor-view" value={content} />
+      </div>
+    </div>
+  );
+}
 
 const fileElement = defineEditorElement({
   type: "file",
@@ -32,42 +65,6 @@ const fileElement = defineEditorElement({
     );
   },
 });
-const Preview = createTextEditorView({
-  className: "preview",
-  nodes: [fileElement],
-});
-const initialValue = "<p>Hello world!</p>";
-
-export default function App() {
-  const controllerRef = useRef<TextEditorController>(null);
-  const [preview, setPreview] = useState(initialValue);
-
-  return (
-    <div>
-      <Toolbar controller={controllerRef} />
-      <div className="app">
-        <TextEditor
-          ref={controllerRef}
-          className="text-editor"
-          placeholder="Start typings..."
-          defaultValue={initialValue}
-          nodes={[fileElement]}
-          upload={{
-            async upload(file, { onProgress }) {
-              onProgress(100);
-              return fileElement.create({
-                href: URL.createObjectURL(file),
-                name: file.name,
-              });
-            },
-          }}
-          onChange={setPreview}
-        />
-        <Preview dangerouslySetInnerHTML={{ __html: preview }} />
-      </div>
-    </div>
-  );
-}
 
 function Toolbar({
   controller,

@@ -2,12 +2,10 @@ import {
   createElement,
   useLayoutEffect,
   useRef,
-  type DetailedHTMLProps,
-  type HTMLAttributes,
+  type ComponentPropsWithoutRef,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { decode } from "html-entities";
-import { cn } from "./cn";
 import type {
   EditorContentSlot,
   EditorElementAttributes,
@@ -23,9 +21,9 @@ import { escapeHTML, sanitizeHTML } from "./sanitizer";
 
 /**
  * Sanitizes editor output, highlights code blocks, and hardens external links
- * for use in an HTML preview.
+ * for display outside the editor.
  */
-export function createInnerHTML(raw: string) {
+function createViewHTML(raw: string) {
   const transformed = sanitizeHTML(raw)
     .replace(/<\/p>/g, "<br></p>")
     .replace(/(<p><br><\/p>)+$/g, "")
@@ -61,8 +59,12 @@ export function createInnerHTML(raw: string) {
   return sanitizeHTML(transformed);
 }
 
-type TextEditorViewOptions = {
-  className?: string;
+export type TextEditorViewProps = Omit<
+  ComponentPropsWithoutRef<"div">,
+  "children" | "dangerouslySetInnerHTML"
+> & {
+  /** Serialized editor value to sanitize and display. */
+  value: string;
   /** Registered node renderers used to replace matching serialized HTML. */
   nodes?: readonly EditorNode[];
   /** Registered mark renderers used to replace matching serialized HTML. */
@@ -76,8 +78,6 @@ function mountMarkRenderers(
   const roots: Root[] = [];
 
   for (const mark of marks) {
-    if (!mark.render) continue;
-
     for (const source of container.querySelectorAll(mark.selectors.join(","))) {
       const attributes = mark.parse(source as HTMLElement);
       if (!attributes) continue;
@@ -89,9 +89,17 @@ function mountMarkRenderers(
       const Content: EditorContentSlot = ({
         as = "span",
         html = childHTML,
+        ...props
       } = {}) =>
-        createElement(as, { dangerouslySetInnerHTML: { __html: html } });
-      root.render(mark.render(attributes as EditorElementAttributes, Content));
+        createElement(as, {
+          ...props,
+          dangerouslySetInnerHTML: { __html: html },
+        });
+      root.render(
+        mark.render(attributes as EditorElementAttributes, Content, {
+          textContent: source.textContent || "",
+        }),
+      );
       roots.push(root);
     }
   }
@@ -106,10 +114,6 @@ function mountNodeRenderers(
   const roots: Root[] = [];
 
   for (const node of nodes) {
-    if (!node.render) {
-      continue;
-    }
-
     const selectors = Array.isArray(node.selector)
       ? node.selector
       : [node.selector];
@@ -125,15 +129,25 @@ function mountNodeRenderers(
       source.replaceWith(host);
       const root = createRoot(host);
       if (node.kind === "atomic") {
-        root.render(node.render(attributes as EditorElementAttributes));
+        root.render(
+          node.render(attributes as EditorElementAttributes, {
+            textContent: source.textContent || "",
+          }),
+        );
       } else {
         const Content: EditorContentSlot = ({
           as = "div",
           html = childHTML,
+          ...props
         } = {}) =>
-          createElement(as, { dangerouslySetInnerHTML: { __html: html } });
+          createElement(as, {
+            ...props,
+            dangerouslySetInnerHTML: { __html: html },
+          });
         root.render(
-          node.render(attributes as EditorElementAttributes, Content),
+          node.render(attributes as EditorElementAttributes, Content, {
+            textContent: source.textContent || "",
+          }),
         );
       }
       roots.push(root);
@@ -143,45 +157,50 @@ function mountNodeRenderers(
   return () => roots.forEach((root) => root.unmount());
 }
 
-/** Creates a React preview component that sanitizes HTML and renders registered nodes and marks. */
-export function createTextEditorView(options: TextEditorViewOptions = {}) {
-  /** Renders sanitized HTML with the configured and caller-supplied class names. */
-  return function Component({
-    className,
-    dangerouslySetInnerHTML,
-    ...props
-  }: DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>) {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const html = createInnerHTML(String(dangerouslySetInnerHTML?.__html || ""));
+export function useTextEditorView(
+  value: string,
+  nodes?: readonly EditorNode[],
+  marks?: readonly EditorMark[],
+) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const html = createViewHTML(value);
 
-    useLayoutEffect(() => {
-      if (!containerRef.current || (!options.nodes && !options.marks)) {
-        return;
-      }
+  useLayoutEffect(() => {
+    if (!containerRef.current || (!nodes && !marks)) {
+      return;
+    }
 
-      const markRoots = options.marks
-        ? mountMarkRenderers(containerRef.current, options.marks)
-        : [];
-      const unmountNodes = options.nodes
-        ? mountNodeRenderers(containerRef.current, options.nodes)
-        : undefined;
-      return () => {
-        markRoots.forEach((root) => root.unmount());
-        unmountNodes?.();
-      };
-    }, [html]);
+    const markRoots = marks
+      ? mountMarkRenderers(containerRef.current, marks)
+      : [];
+    const unmountNodes = nodes
+      ? mountNodeRenderers(containerRef.current, nodes)
+      : undefined;
+    return () => {
+      markRoots.forEach((root) => root.unmount());
+      unmountNodes?.();
+    };
+  }, [html, marks, nodes]);
 
-    return (
-      <div
-        {...props}
-        ref={containerRef}
-        className={cn(options.className, className)}
-        dangerouslySetInnerHTML={{
-          __html: html,
-        }}
-      />
-    );
-  };
+  return { containerRef, html };
+}
+
+/** Safely displays a serialized editor value as React content. */
+export function TextEditorView({
+  value,
+  nodes,
+  marks,
+  ...props
+}: TextEditorViewProps) {
+  const { containerRef, html } = useTextEditorView(value, nodes, marks);
+
+  return (
+    <div
+      {...props}
+      ref={containerRef}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 export { registerHighlightLanguage, supportedLanguages };

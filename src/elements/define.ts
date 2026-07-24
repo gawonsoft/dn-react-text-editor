@@ -4,16 +4,13 @@ import type {
   EditorElement,
   EditorElementAttributes,
   EditorElementDefinition,
-  EditorElementRenderDefinition,
   EditorMark,
   EditorMarkDefinition,
 } from "./types";
 
 /** Defines a high-level atomic editor element and its typed value factory. */
 export function defineEditorElement<Attributes extends EditorElementAttributes>(
-  definition:
-    | EditorElementDefinition<Attributes>
-    | EditorElementRenderDefinition<Attributes>,
+  definition: EditorElementDefinition<Attributes>,
 ): EditorElement<Attributes> {
   return {
     ...definition,

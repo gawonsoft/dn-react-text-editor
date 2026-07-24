@@ -17,12 +17,17 @@ class ReactMarkView implements MarkView {
   constructor(mark: Mark, definition: EditorMark) {
     this.#root = createRoot(this.dom);
     const slotRef = createRef<HTMLElement>();
-    const Content: EditorContentSlot = ({ as = "span" } = {}) =>
-      createElement(as, { ref: slotRef });
+    const Content: EditorContentSlot = ({
+      as = "span",
+      html: _html,
+      ...props
+    } = {}) => createElement(as, { ...props, ref: slotRef });
 
     flushSync(() => {
       this.#root.render(
-        definition.render?.(mark.attrs as EditorElementAttributes, Content),
+        definition.render(mark.attrs as EditorElementAttributes, Content, {
+          textContent: "",
+        }),
       );
     });
     this.contentDOM = slotRef.current || undefined;
@@ -36,11 +41,9 @@ class ReactMarkView implements MarkView {
 /** Creates internal React-backed mark views for registered mark renderers. */
 export function createEditorMarkViews(marks: readonly EditorMark[]) {
   return Object.fromEntries(
-    marks
-      .filter((mark) => mark.render)
-      .map((mark) => [
-        mark.type,
-        (value: Mark) => new ReactMarkView(value, mark),
-      ]),
+    marks.map((mark) => [
+      mark.type,
+      (value: Mark) => new ReactMarkView(value, mark),
+    ]),
   ) as Record<string, MarkViewConstructor>;
 }

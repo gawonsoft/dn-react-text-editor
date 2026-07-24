@@ -8,8 +8,8 @@ All notable changes to this project are documented in this file.
 
 - Stable controller lifecycle, read-only change events, typed commands, and
   cancellable upload adapters.
-- Separate `preview` and `sanitizer` package subpaths.
-- High-level registered nodes and marks with shared editor/preview React renderers.
+- Separate `view` and `sanitizer` package subpaths.
+- High-level registered nodes and marks with shared editor/view React renderers.
 
 ### Changed
 
@@ -22,9 +22,13 @@ All notable changes to this project are documented in this file.
 
 ### Breaking Changes
 
+- Replaced separate element, container, and mark `serialize` callbacks with one
+  required `render` callback used by the editor, saved HTML, and read-only view.
+- Replaced the `createTextEditorView` factory and public
+  `dangerouslySetInnerHTML` prop with `<TextEditorView value={value} />`.
 - Removed raw schema/state/editor configuration and the
   `gw-rich-text-editor/prosemirror` export.
-- Moved preview helpers to `gw-rich-text-editor/preview` and sanitizer helpers
+- Moved read-only views to `gw-rich-text-editor/view` and sanitizer helpers
   to `gw-rich-text-editor/sanitizer`.
 - `UploadAdapter.upload()` now returns a value created by a registered editor
   element instead of a media URL object.
@@ -34,7 +38,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
-- Controlled `value` support and a safe HTML preview component.
+- Controlled `value` support and a safe read-only HTML component.
 - HTML sanitization, upload-position handling, and schema regression tests.
 - Package verification scripts and provenance-enabled npm publishing.
 

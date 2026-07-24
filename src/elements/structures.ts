@@ -1,3 +1,4 @@
+import { createElement, type CSSProperties } from "react";
 import { defineEditorContainer } from "./define";
 
 const alignedAttributes = { align: null as string | null };
@@ -12,11 +13,13 @@ export const paragraphElement = defineEditorContainer({
   parse(element) {
     return { align: element.style.textAlign || null };
   },
-  serialize({ align }) {
-    return {
-      tag: "p",
-      attributes: { style: align ? `text-align: ${align}` : null },
-    };
+  render({ align }, Content) {
+    return Content({
+      as: "p",
+      style: align
+        ? { textAlign: align as CSSProperties["textAlign"] }
+        : undefined,
+    });
   },
 });
 
@@ -34,14 +37,15 @@ export const headingElement = defineEditorContainer({
       level: Number(element.tagName.slice(1)) || 1,
     };
   },
-  serialize({ level, align }, { textContent }) {
-    return {
-      tag: `h${level}`,
-      attributes: {
-        id: textContent.toLowerCase().replace(/\s+/g, "-"),
-        style: align ? `text-align: ${align};` : null,
-      },
-    };
+  render({ level, align }, Content, { textContent }) {
+    const tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+    return Content({
+      as: tag,
+      id: textContent.toLowerCase().replace(/\s+/g, "-"),
+      style: align
+        ? { textAlign: align as CSSProperties["textAlign"] }
+        : undefined,
+    });
   },
 });
 
@@ -56,8 +60,8 @@ export const blockquoteElement = defineEditorContainer({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "blockquote" };
+  render(_attributes, Content) {
+    return Content({ as: "blockquote" });
   },
 });
 
@@ -71,12 +75,15 @@ export const codeBlockElement = defineEditorContainer({
   marks: "",
   defining: true,
   code: true,
-  contentTag: "code",
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "pre", attributes: { class: "hljs" } };
+  render(_attributes, Content) {
+    return createElement(
+      "pre",
+      { className: "hljs" },
+      Content({ as: "code" }),
+    );
   },
 });
 
@@ -90,8 +97,8 @@ export const bulletListElement = defineEditorContainer({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "ul" };
+  render(_attributes, Content) {
+    return Content({ as: "ul" });
   },
 });
 
@@ -105,8 +112,8 @@ export const orderedListElement = defineEditorContainer({
   parse(element) {
     return { order: Number(element.getAttribute("start")) || 1 };
   },
-  serialize({ order }) {
-    return { tag: "ol", attributes: { start: order === 1 ? null : order } };
+  render({ order }, Content) {
+    return Content({ as: "ol", start: order === 1 ? undefined : order });
   },
 });
 
@@ -120,8 +127,8 @@ export const listItemElement = defineEditorContainer({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "li" };
+  render(_attributes, Content) {
+    return Content({ as: "li" });
   },
 });
 

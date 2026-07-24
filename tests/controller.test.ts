@@ -48,4 +48,20 @@ describe("TextEditorController", () => {
 
     expect(aborted).toBe(true);
   });
+
+  it("serializes the same React trees used by default nodes and marks", () => {
+    const controller = createController(
+      '<h2 style="text-align: center">Title</h2><ul><li><p><strong>One</strong></p></li></ul><pre><code>const value = 1;</code></pre>',
+    );
+
+    expect(controller.value).toContain(
+      '<h2 id="title" style="text-align: center;">Title</h2>',
+    );
+    expect(controller.value).toContain(
+      "<ul><li><p><strong>One</strong></p></li></ul>",
+    );
+    expect(controller.value).toContain(
+      '<pre class="hljs"><code>const value = 1;</code></pre>',
+    );
+  });
 });

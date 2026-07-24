@@ -17,10 +17,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./preview": {
-      "types": "./dist/preview.d.ts",
-      "import": "./dist/preview.mjs",
-      "require": "./dist/preview.js"
+    "./view": {
+      "types": "./dist/view.d.ts",
+      "import": "./dist/view.mjs",
+      "require": "./dist/view.js"
     },
     "./sanitizer": {
       "types": "./dist/sanitizer.d.ts",

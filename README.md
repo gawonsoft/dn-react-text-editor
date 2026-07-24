@@ -1,7 +1,7 @@
 # gw-rich-text-editor
 
 A React 19 rich-text editor built on ProseMirror. It supports controlled and
-uncontrolled values, safe HTML previews, syntax-highlighted code blocks, media
+uncontrolled values, safe read-only views, syntax-highlighted code blocks, media
 uploads, drag and drop, history, and formatting tools.
 
 ## Installation
@@ -170,14 +170,12 @@ element, pass every declared attribute:
 card. Set `display: "inline"` for an atomic inline node such as a custom hard
 break; the built-in `hardBreakElement` uses this mode. `defineEditorContainer`
 defines a node with editable content, such as a callout or heading.
-`defineEditorMark` defines an inline text mark. Register
-the same nodes with `TextEditor` and `createTextEditorView`; the editor schema
-and preview then share the same HTML round-trip contract. A matching built-in
-node or mark type overrides its default definition. For atomic elements,
-`render` can be the sole HTML source: its one root element is statically
-rendered for storage, so it must include the attributes read by `selector` and
-`parse`. Use `serialize` when the saved representation must differ from the
-interactive React UI.
+`defineEditorMark` defines an inline text mark. Register nodes and marks with
+`TextEditor`; their rendered HTML is stored in the editor value and can be shown
+directly with `TextEditorView`. A matching built-in node or mark type overrides
+its default definition. The root element returned by `render` must include the
+attributes read by `selector` and `parse`. The same React tree is used for the
+editor, saved HTML, and read-only view.
 
 ```tsx
 import {
@@ -187,7 +185,7 @@ import {
   imageElement,
   TextEditor,
 } from "gw-rich-text-editor";
-import { createTextEditorView } from "gw-rich-text-editor/preview";
+import { TextEditorView } from "gw-rich-text-editor/view";
 
 const fileElement = defineEditorElement({
   type: "file",
@@ -225,12 +223,12 @@ const calloutNode = defineEditorContainer({
   content: "inline*",
   group: "block",
   parse: (element) => ({ tone: element.dataset.tone || "info" }),
-  serialize: ({ tone }) => ({
-    tag: "aside",
-    attributes: { "data-callout": "true", "data-tone": tone },
-  }),
   render: ({ tone }, Content) => (
-    <aside className={`callout callout-${tone}`}>
+    <aside
+      data-callout
+      data-tone={tone}
+      className={`callout callout-${tone}`}
+    >
       <Content />
     </aside>
   ),
@@ -241,20 +239,11 @@ const highlightMark = defineEditorMark({
   attributes: { color: "yellow" },
   selectors: ["mark[data-highlight]"],
   parse: (element) => ({ color: element.dataset.color || "yellow" }),
-  serialize: ({ color }) => ({
-    tag: "mark",
-    attributes: { "data-highlight": "true", "data-color": color },
-  }),
   render: ({ color }, Content) => (
-    <mark data-color={color}>
+    <mark data-highlight data-color={color}>
       <Content />
     </mark>
   ),
-});
-
-const Preview = createTextEditorView({
-  nodes: [fileElement, calloutNode],
-  marks: [highlightMark],
 });
 
 <TextEditor
@@ -272,6 +261,8 @@ const Preview = createTextEditorView({
     },
   }}
 />;
+
+<TextEditorView value={value} />;
 ```
 
 Call `controller.insertElement(fileElement.create(...))` to insert a registered
@@ -281,31 +272,29 @@ The HTML `download` attribute only guarantees a
 download for same-origin or Blob URLs; configure `Content-Disposition:
 attachment` on cross-origin storage URLs when a download must be forced.
 
-## Safe Previews
+## Read-only Views
 
-Use `createTextEditorView` for rendering saved editor HTML. It sanitizes the
-provided markup before it reaches `dangerouslySetInnerHTML`.
+Pass the saved editor value directly to `TextEditorView`. It sanitizes the
+markup internally, so callers do not use `dangerouslySetInnerHTML`.
 
 ```tsx
-import { createTextEditorView } from "gw-rich-text-editor/preview";
+import { TextEditorView } from "gw-rich-text-editor/view";
 import "highlight.js/styles/github.css";
 
-const ArticlePreview = createTextEditorView({ className: "article-preview" });
-
-<ArticlePreview dangerouslySetInnerHTML={{ __html: value }} />;
+<TextEditorView className="article-content" value={value} />;
 ```
 
-The preview bundles JavaScript, TypeScript, JSON, HTML/XML, and CSS highlighting.
+The view bundles JavaScript, TypeScript, JSON, HTML/XML, and CSS highlighting.
 Register other Highlight.js languages only when the application needs them:
 
 ```tsx
 import python from "highlight.js/lib/languages/python";
-import { registerHighlightLanguage } from "gw-rich-text-editor/preview";
+import { registerHighlightLanguage } from "gw-rich-text-editor/view";
 
 registerHighlightLanguage("python", python);
 ```
 
-Sanitization protects the bundled preview component. Apply your application's
+Sanitization protects `TextEditorView`. Apply your application's
 own content-security policy and validation rules when storing or rendering HTML
 through another path.
 
@@ -313,8 +302,8 @@ through another path.
 
 The main export intentionally exposes only the high-level editor API. Raw
 ProseMirror types and the former `gw-rich-text-editor/prosemirror` export are
-not supported. Import preview and sanitization helpers from
-`gw-rich-text-editor/preview` and `gw-rich-text-editor/sanitizer`.
+not supported. Import the read-only component and sanitization helpers from
+`gw-rich-text-editor/view` and `gw-rich-text-editor/sanitizer`.
 
 ## Development
 

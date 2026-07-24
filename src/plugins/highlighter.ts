@@ -28,5 +28,5 @@ export function registerHighlightLanguage(
   hljs.registerLanguage(name, language);
 }
 
-/** Exposes the configured Highlight.js instance used by preview rendering. */
+/** Exposes the configured Highlight.js instance used by read-only views. */
 export const highlighter = hljs;

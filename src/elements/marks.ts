@@ -11,16 +11,14 @@ export const linkMark = defineEditorMark({
       title: element.getAttribute("title"),
     };
   },
-  serialize({ href, title }) {
-    return {
-      tag: "a",
-      attributes: {
-        href,
-        title: title || href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-      },
-    };
+  render({ href, title }, Content) {
+    return Content({
+      as: "a",
+      href,
+      title: title || href,
+      target: "_blank",
+      rel: "noopener noreferrer",
+    });
   },
   inclusive: false,
 });
@@ -33,8 +31,8 @@ export const boldMark = defineEditorMark({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "strong" };
+  render(_attributes, Content) {
+    return Content({ as: "strong" });
   },
 });
 
@@ -46,8 +44,8 @@ export const italicMark = defineEditorMark({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "em" };
+  render(_attributes, Content) {
+    return Content({ as: "em" });
   },
 });
 
@@ -59,8 +57,8 @@ export const underlineMark = defineEditorMark({
   parse() {
     return {};
   },
-  serialize() {
-    return { tag: "u" };
+  render(_attributes, Content) {
+    return Content({ as: "u" });
   },
 });
 

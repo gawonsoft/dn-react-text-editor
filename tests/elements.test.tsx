@@ -66,10 +66,10 @@ describe("registered editor elements", () => {
     );
     expect(controller.value).toContain(">report.pdf</a>");
 
-    const preview = document.createElement("div");
-    preview.innerHTML = controller.value;
-    expect(preview.querySelector("a")?.textContent).toBe("report.pdf");
-    expect(preview.querySelector("a")?.getAttribute("download")).toBe(
+    const content = document.createElement("div");
+    content.innerHTML = controller.value;
+    expect(content.querySelector("a")?.textContent).toBe("report.pdf");
+    expect(content.querySelector("a")?.getAttribute("download")).toBe(
       "report.pdf",
     );
 
@@ -91,15 +91,9 @@ describe("registered editor elements", () => {
     parse(element) {
       return { tone: element.dataset.tone || "info" };
     },
-    serialize({ tone }) {
-      return {
-        tag: "aside",
-        attributes: { "data-callout": "true", "data-tone": tone },
-      };
-    },
     render({ tone }, Content) {
       return (
-        <aside data-testid="callout" data-tone={tone}>
+        <aside data-testid="callout" data-callout data-tone={tone}>
           <Content as="span" />
         </aside>
       );
@@ -113,15 +107,9 @@ describe("registered editor elements", () => {
     parse(element) {
       return { color: element.dataset.color || "yellow" };
     },
-    serialize({ color }) {
-      return {
-        tag: "mark",
-        attributes: { "data-highlight": "true", "data-color": color },
-      };
-    },
     render({ color }, Content) {
       return (
-        <mark data-testid="highlight" data-color={color}>
+        <mark data-testid="highlight" data-highlight data-color={color}>
           <Content />
         </mark>
       );
