@@ -1,5 +1,5 @@
-import { TextEditor, TextEditorController } from "gw-react-text-editor";
-import { createTextEditorView } from "gw-react-text-editor/preview";
+import { TextEditor, TextEditorController } from "gw-rich-text-editor";
+import { createTextEditorView } from "gw-rich-text-editor/preview";
 import { useRef, useState, type RefObject } from "react";
 import "highlight.js/styles/github.css";
 

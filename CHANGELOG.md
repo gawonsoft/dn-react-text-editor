@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## 0.4.0 - 2026-07-24
+## 0.1.0 - 2026-07-24
 
 ### Added
 
@@ -18,9 +18,9 @@ All notable changes to this project are documented in this file.
 ### Breaking Changes
 
 - Removed raw schema/state/editor configuration and the
-  `gw-react-text-editor/prosemirror` export.
-- Moved preview helpers to `gw-react-text-editor/preview` and sanitizer helpers
-  to `gw-react-text-editor/sanitizer`.
+  `gw-rich-text-editor/prosemirror` export.
+- Moved preview helpers to `gw-rich-text-editor/preview` and sanitizer helpers
+  to `gw-rich-text-editor/sanitizer`.
 
 ## 0.3.0 - 2026-07-24
 

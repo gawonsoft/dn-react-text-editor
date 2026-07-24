@@ -1,4 +1,4 @@
-# gw-react-text-editor
+# gw-rich-text-editor
 
 A React 19 rich-text editor built on ProseMirror. It supports controlled and
 uncontrolled values, safe HTML previews, syntax-highlighted code blocks, media
@@ -7,7 +7,7 @@ uploads, drag and drop, history, and formatting tools.
 ## Installation
 
 ```bash
-npm install gw-react-text-editor
+npm install gw-rich-text-editor
 ```
 
 `react` and `react-dom` 19 are peer dependencies and must be installed by the
@@ -17,7 +17,7 @@ application.
 
 ```tsx
 import { useState } from "react";
-import { TextEditor } from "gw-react-text-editor";
+import { TextEditor } from "gw-rich-text-editor";
 
 export function ArticleEditor() {
   const [value, setValue] = useState("<p>Hello world!</p>");
@@ -69,7 +69,7 @@ current selection and restores focus before changing formatting.
 
 ```tsx
 import { useRef } from "react";
-import { TextEditor, TextEditorController } from "gw-react-text-editor";
+import { TextEditor, TextEditorController } from "gw-rich-text-editor";
 
 export function EditorWithToolbar() {
   const editorRef = useRef<TextEditorController>(null);
@@ -158,7 +158,7 @@ Use `createTextEditorView` for rendering saved editor HTML. It sanitizes the
 provided markup before it reaches `dangerouslySetInnerHTML`.
 
 ```tsx
-import { createTextEditorView } from "gw-react-text-editor/preview";
+import { createTextEditorView } from "gw-rich-text-editor/preview";
 import "highlight.js/styles/github.css";
 
 const ArticlePreview = createTextEditorView({ className: "article-preview" });
@@ -173,9 +173,9 @@ through another path.
 ## Package Boundaries
 
 The main export intentionally exposes only the high-level editor API. Raw
-ProseMirror types and the former `gw-react-text-editor/prosemirror` export are
+ProseMirror types and the former `gw-rich-text-editor/prosemirror` export are
 not supported. Import preview and sanitization helpers from
-`gw-react-text-editor/preview` and `gw-react-text-editor/sanitizer`.
+`gw-rich-text-editor/preview` and `gw-rich-text-editor/sanitizer`.
 
 ## Development
 
