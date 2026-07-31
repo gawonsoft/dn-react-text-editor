@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.1 - 2026-07-31
+
+### Fixed
+
+- Bound and disposed React-backed ProseMirror views outside React lifecycle
+  methods to avoid nested `flushSync` warnings in React 19.
+- Marked the interactive editor and read-only React view entry points as client
+  module boundaries for React Server Component consumers.
+
 ## 0.1.0 - 2026-07-24
 
 ### Added

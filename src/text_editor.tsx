@@ -2,7 +2,6 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useMemo,
   type DetailedHTMLProps,
   type HTMLAttributes,
   type Ref,
@@ -53,6 +52,7 @@ export function TextEditor({
 }: TextEditorProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const initialDefaultValue = useRef(defaultValue);
+  const latestValue = useRef(value);
   const controllerRef = useRef<TextEditorController>(null);
 
   if (!controllerRef.current) {
@@ -77,16 +77,42 @@ export function TextEditor({
   useImperativeHandle(ref, () => controller, [controller]);
 
   useLayoutEffect(() => {
+    latestValue.current = value;
+  }, [value]);
+
+  useLayoutEffect(() => {
     const container = containerRef.current;
 
     if (!container) {
       return;
     }
 
-    controller.bind(container);
+    let isActive = true;
+
+    // Registered node and mark renderers use flushSync to synchronously expose
+    // ProseMirror's contentDOM. Bind after React finishes the current effect
+    // lifecycle so that integration boundary does not nest a React flush.
+    queueMicrotask(() => {
+      if (!isActive) {
+        return;
+      }
+
+      controller.bind(container);
+
+      if (
+        latestValue.current !== undefined &&
+        controller.value !== latestValue.current
+      ) {
+        controller.value = latestValue.current;
+      }
+    });
 
     return () => {
-      controller.dispose();
+      isActive = false;
+
+      if (controller.isBound) {
+        queueMicrotask(() => controller.dispose());
+      }
     };
   }, [controller]);
 

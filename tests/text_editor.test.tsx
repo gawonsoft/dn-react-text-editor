@@ -1,0 +1,49 @@
+/** @vitest-environment jsdom */
+
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { TextEditor } from "../src/text_editor";
+
+const reactEnvironment = globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT: boolean;
+};
+
+reactEnvironment.IS_REACT_ACT_ENVIRONMENT = true;
+
+afterEach(() => {
+  document.body.replaceChildren();
+  vi.restoreAllMocks();
+});
+
+describe("TextEditor", () => {
+  it("binds React-backed node views outside the React lifecycle", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+
+    await act(async () => {
+      root.render(
+        <TextEditor name="content" defaultValue="<p>Initial value</p>" />,
+      );
+      await Promise.resolve();
+    });
+
+    expect(host.querySelector(".ProseMirror")?.textContent).toBe(
+      "Initial value",
+    );
+    expect(
+      consoleError.mock.calls.some(([message]) =>
+        String(message).includes("flushSync was called from inside a lifecycle"),
+      ),
+    ).toBe(false);
+
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
+  });
+});
