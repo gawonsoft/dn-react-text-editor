@@ -1,14 +1,13 @@
-import { createElement, createRef } from "react";
-import { flushSync } from "react-dom";
 import { createRoot, type Root } from "react-dom/client";
 import type { Node as ProseMirrorNode } from "prosemirror-model";
 import type { NodeView, NodeViewConstructor } from "prosemirror-view";
 import type {
   EditorContainer,
-  EditorContentSlot,
   EditorElementAttributes,
   EditorNode,
 } from "../elements";
+import { renderContentDOM } from "../schema/render";
+import { patchRenderedDOM } from "./patch_rendered_dom";
 
 class ReactElementNodeView implements NodeView {
   readonly dom: HTMLElement;
@@ -50,45 +49,37 @@ class ReactElementNodeView implements NodeView {
 
 class ReactContainerNodeView implements NodeView {
   readonly dom = document.createElement("div");
-  contentDOM?: HTMLElement;
-  readonly #root: Root;
+  readonly contentDOM: HTMLElement;
+  readonly #renderedDOM: HTMLElement;
 
   constructor(
     private readonly container: EditorContainer,
     node: ProseMirrorNode,
   ) {
-    this.#root = createRoot(this.dom);
-    this.render(node);
+    const rendered = this.render(node);
+    this.#renderedDOM = rendered.dom;
+    this.contentDOM = rendered.contentDOM;
+    this.dom.append(rendered.dom);
   }
 
   update(node: ProseMirrorNode) {
     if (node.type.name !== this.container.type) return false;
-    this.render(node);
-    return true;
-  }
-
-  destroy() {
-    this.#root.unmount();
+    const rendered = this.render(node);
+    return patchRenderedDOM(
+      this.#renderedDOM,
+      rendered.dom,
+      this.contentDOM,
+      rendered.contentDOM,
+    );
   }
 
   private render(node: ProseMirrorNode) {
-    const slotRef = createRef<HTMLElement>();
-    const Content: EditorContentSlot = ({
-      as = "div",
-      html: _html,
-      ...props
-    } = {}) => createElement(as, { ...props, ref: slotRef });
-
-    flushSync(() => {
-      this.#root.render(
-        this.container.render(
-          node.attrs as EditorElementAttributes,
-          Content,
-          { textContent: node.textContent },
-        ),
-      );
+    return renderContentDOM({
+      type: this.container.type,
+      attributes: node.attrs as EditorElementAttributes,
+      textContent: node.textContent,
+      render: this.container.render,
     });
-    this.contentDOM = slotRef.current || undefined;
   }
 }
 

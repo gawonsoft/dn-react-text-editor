@@ -1,6 +1,5 @@
 import { createElement, type ReactNode } from "react";
-import { flushSync } from "react-dom";
-import { createRoot } from "react-dom/client";
+import { renderToStaticMarkup } from "react-dom/server";
 import type {
   EditorContentSlot,
   EditorElementAttributes,
@@ -11,18 +10,39 @@ const contentSlotAttribute = "data-editor-content-slot";
 
 function renderRoot(type: string, content: ReactNode) {
   const host = document.createElement("div");
-  const root = createRoot(host);
-  flushSync(() => root.render(content));
+  host.innerHTML = renderToStaticMarkup(content);
+
+  // React 19 emits image preload hints next to an SSR-rendered image. They are
+  // transport metadata, not part of the element definition's DOM contract.
+  if (host.childElementCount > 1) {
+    for (const child of [...host.children]) {
+      if (
+        child instanceof HTMLLinkElement &&
+        child.rel === "preload" &&
+        child.getAttribute("as") === "image"
+      ) {
+        child.remove();
+      }
+    }
+  }
 
   if (host.childElementCount !== 1 || host.childNodes.length !== 1) {
-    flushSync(() => root.unmount());
     throw new Error(
       `The renderer for "${type}" must return exactly one root HTML element.`,
     );
   }
 
-  const rendered = host.firstElementChild!.cloneNode(true) as HTMLElement;
-  flushSync(() => root.unmount());
+  const rendered = host.firstElementChild as HTMLElement;
+
+  for (const element of [
+    rendered,
+    ...rendered.querySelectorAll<HTMLElement>("[style]"),
+  ]) {
+    if (element.hasAttribute("style")) {
+      element.style.cssText = element.style.cssText;
+    }
+  }
+
   return rendered;
 }
 

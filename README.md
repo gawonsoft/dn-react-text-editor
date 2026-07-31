@@ -62,6 +62,11 @@ Provide baseline styles for the editor surface in your application:
 | `upload`            | `UploadAdapter`                      | Storage integration with cancellation, progress, and error handling. |
 | `editorStyle`       | `string`                             | Inline CSS applied to the ProseMirror editor element.                |
 
+Controlled `value` updates are safe from React effects; consumers do not need
+to defer them with a timer or microtask. Container and mark render callbacks
+define synchronous DOM structure inside the editable surface, while atomic node
+renderers remain React-mounted for interactive media and custom controls.
+
 Use `ref` to access the editor's value, uploads, and simple formatting commands.
 
 ## Toolbar Commands

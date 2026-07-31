@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.2 - 2026-07-31
+
+### Fixed
+
+- Removed the editor runtime's nested `flushSync` calls so controlled values
+  and external controller updates are safe during React effect lifecycles.
+- Preserved ProseMirror-managed content DOM while updating container renderer
+  attributes and surrounding static structure.
+- Excluded React 19 image preload hints from serialized editor content.
+
+### Changed
+
+- Container and mark renderers now create their synchronous ProseMirror DOM
+  shells with React static markup instead of temporary nested React roots.
+
 ## 0.1.1 - 2026-07-31
 
 ### Fixed

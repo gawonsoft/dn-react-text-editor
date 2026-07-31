@@ -64,4 +64,31 @@ describe("TextEditorController", () => {
       '<pre class="hljs"><code>const value = 1;</code></pre>',
     );
   });
+
+  it("does not serialize React image preload hints as editor content", () => {
+    const controller = createController(
+      '<img src="https://cdn.example.com/image.png" alt="Example">',
+    );
+
+    expect(controller.value).toContain(
+      '<img src="https://cdn.example.com/image.png" alt="Example">',
+    );
+    expect(controller.value).not.toContain('<link rel="preload"');
+  });
+
+  it("updates rendered container attributes without replacing contentDOM", () => {
+    const container = document.createElement("div");
+    const controller = new TextEditorController({
+      defaultValue: "<h2>Title</h2>",
+    });
+    controller.bind(container);
+    const heading = container.querySelector("h2");
+    const view = controller.getView();
+
+    view.dispatch(view.state.tr.insertText(" Updated", 6));
+
+    expect(container.querySelector("h2")).toBe(heading);
+    expect(heading?.id).toBe("title-updated");
+    expect(heading?.textContent).toBe("Title Updated");
+  });
 });

@@ -17,7 +17,7 @@ afterEach(() => {
 });
 
 describe("TextEditor", () => {
-  it("binds React-backed node views outside the React lifecycle", async () => {
+  it("binds the editor without nesting a React flush", async () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
@@ -40,6 +40,35 @@ describe("TextEditor", () => {
         String(message).includes("flushSync was called from inside a lifecycle"),
       ),
     ).toBe(false);
+
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
+  });
+
+  it("applies controlled value changes inside React effects without nesting a flush", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+
+    await act(async () => {
+      root.render(<TextEditor value="<p>Initial value</p>" />);
+    });
+
+    await act(async () => {
+      root.render(
+        <TextEditor value="<h2><strong>Controlled value</strong></h2>" />,
+      );
+    });
+
+    expect(host.querySelector(".ProseMirror")?.textContent).toBe(
+      "Controlled value",
+    );
+    expect(consoleError).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();

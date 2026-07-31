@@ -1,40 +1,21 @@
-import { createElement, createRef } from "react";
-import { flushSync } from "react-dom";
-import { createRoot, type Root } from "react-dom/client";
 import type { Mark } from "prosemirror-model";
 import type { MarkView, MarkViewConstructor } from "prosemirror-view";
-import type {
-  EditorContentSlot,
-  EditorElementAttributes,
-  EditorMark,
-} from "../elements";
+import type { EditorElementAttributes, EditorMark } from "../elements";
+import { renderContentDOM } from "../schema/render";
 
 class ReactMarkView implements MarkView {
   readonly dom = document.createElement("span");
-  contentDOM?: HTMLElement;
-  readonly #root: Root;
+  readonly contentDOM: HTMLElement;
 
   constructor(mark: Mark, definition: EditorMark) {
-    this.#root = createRoot(this.dom);
-    const slotRef = createRef<HTMLElement>();
-    const Content: EditorContentSlot = ({
-      as = "span",
-      html: _html,
-      ...props
-    } = {}) => createElement(as, { ...props, ref: slotRef });
-
-    flushSync(() => {
-      this.#root.render(
-        definition.render(mark.attrs as EditorElementAttributes, Content, {
-          textContent: "",
-        }),
-      );
+    const rendered = renderContentDOM({
+      type: definition.type,
+      attributes: mark.attrs as EditorElementAttributes,
+      textContent: "",
+      render: definition.render,
     });
-    this.contentDOM = slotRef.current || undefined;
-  }
-
-  destroy() {
-    this.#root.unmount();
+    this.dom.append(rendered.dom);
+    this.contentDOM = rendered.contentDOM;
   }
 }
 

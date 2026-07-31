@@ -87,30 +87,19 @@ export function TextEditor({
       return;
     }
 
-    let isActive = true;
+    controller.bind(container);
 
-    // Registered node and mark renderers use flushSync to synchronously expose
-    // ProseMirror's contentDOM. Bind after React finishes the current effect
-    // lifecycle so that integration boundary does not nest a React flush.
-    queueMicrotask(() => {
-      if (!isActive) {
-        return;
-      }
-
-      controller.bind(container);
-
-      if (
-        latestValue.current !== undefined &&
-        controller.value !== latestValue.current
-      ) {
-        controller.value = latestValue.current;
-      }
-    });
+    if (
+      latestValue.current !== undefined &&
+      controller.value !== latestValue.current
+    ) {
+      controller.value = latestValue.current;
+    }
 
     return () => {
-      isActive = false;
-
       if (controller.isBound) {
+        // Atomic node views own nested React roots. Release them after the
+        // parent root finishes its current cleanup lifecycle.
         queueMicrotask(() => controller.dispose());
       }
     };
