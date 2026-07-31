@@ -34,7 +34,8 @@ export function ArticleEditor() {
 }
 ```
 
-Provide baseline styles for the editor surface in your application:
+The package provides the editor's behavioral styles. The application still
+owns surface sizing and decoration:
 
 ```css
 .editor .ProseMirror {
@@ -66,6 +67,53 @@ Controlled `value` updates are safe from React effects; consumers do not need
 to defer them with a timer or microtask. Container and mark render callbacks
 define synchronous DOM structure inside the editable surface, while atomic node
 renderers remain React-mounted for interactive media and custom controls.
+
+## Styling
+
+The main `gw-rich-text-editor` entrypoint automatically injects scoped
+ProseMirror, selection, text-placeholder, and upload-placeholder styles.
+Override the default colors on the editor or an ancestor when the application
+only needs a different theme:
+
+```css
+.editor {
+  --gw-rich-text-placeholder-color: #64748b;
+  --gw-rich-text-upload-placeholder-background: #f1f5f9;
+  --gw-rich-text-selection-color: #60a5fa;
+}
+```
+
+### Full CSS control
+
+Import the same editor API from `gw-rich-text-editor/unstyled` to disable every
+package-provided style:
+
+```tsx
+import {
+  TextEditor,
+  type TextEditorController,
+} from "gw-rich-text-editor/unstyled";
+```
+
+The unstyled entrypoint does not import or inject CSS. Applications can target
+the stable `.gw-rich-text-editor` root class and these ProseMirror hooks:
+
+- `[data-placeholder]::before` for the empty-editor placeholder;
+- `.upload-placeholder` and `.upload-progress` during file uploads;
+- `.ProseMirror-hideselection` while the native selection is hidden;
+- `.ProseMirror-selectednode` for selected document nodes;
+- `img.ProseMirror-separator` for cursor separator images.
+
+The complete package defaults are available in
+[`styles.css`](./styles.css). They can be copied as a starting point, or loaded
+explicitly without automatic injection:
+
+```ts
+import "gw-rich-text-editor/styles.css";
+```
+
+Do not combine that explicit stylesheet import with the default styled
+entrypoint, because the default entrypoint already injects the same rules.
 
 Use `ref` to access the editor's value, uploads, and simple formatting commands.
 
@@ -305,9 +353,10 @@ through another path.
 
 ## Package Boundaries
 
-The main export intentionally exposes only the high-level editor API. Raw
-ProseMirror types and the former `gw-rich-text-editor/prosemirror` export are
-not supported. Import the read-only component and sanitization helpers from
+The main and `unstyled` exports expose the same high-level editor API. The main
+entrypoint includes automatic styles; `unstyled` includes none. Raw ProseMirror
+types and the former `gw-rich-text-editor/prosemirror` export are not supported.
+Import the read-only component and sanitization helpers from
 `gw-rich-text-editor/view` and `gw-rich-text-editor/sanitizer`.
 
 ## Development

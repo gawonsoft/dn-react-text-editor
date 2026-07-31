@@ -36,10 +36,34 @@ describe("TextEditor", () => {
       "Initial value",
     );
     expect(
+      host.querySelector(".ProseMirror")?.classList.contains(
+        "gw-rich-text-editor",
+      ),
+    ).toBe(true);
+    expect(
       consoleError.mock.calls.some(([message]) =>
         String(message).includes("flushSync was called from inside a lifecycle"),
       ),
     ).toBe(false);
+
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
+  });
+
+  it("exposes an empty-editor placeholder without a consumer class name", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+
+    await act(async () => {
+      root.render(<TextEditor placeholder="Write something" />);
+    });
+
+    const editor = host.querySelector(".gw-rich-text-editor");
+
+    expect(editor?.getAttribute("data-placeholder")).toBe("Write something");
 
     await act(async () => {
       root.unmount();

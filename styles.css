@@ -1,0 +1,73 @@
+.gw-rich-text-editor {
+  position: relative;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  white-space: break-spaces;
+  -webkit-font-variant-ligatures: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0;
+}
+
+.gw-rich-text-editor pre {
+  white-space: pre-wrap;
+}
+
+.gw-rich-text-editor li {
+  position: relative;
+}
+
+.gw-rich-text-editor.ProseMirror-hideselection *::selection {
+  background: transparent;
+}
+
+.gw-rich-text-editor.ProseMirror-hideselection *::-moz-selection {
+  background: transparent;
+}
+
+.gw-rich-text-editor.ProseMirror-hideselection {
+  caret-color: transparent;
+}
+
+.gw-rich-text-editor [draggable][contenteditable="false"] {
+  user-select: text;
+}
+
+.gw-rich-text-editor .ProseMirror-selectednode {
+  outline: 2px solid var(--gw-rich-text-selection-color, #8cf);
+}
+
+.gw-rich-text-editor li.ProseMirror-selectednode {
+  outline: none;
+}
+
+.gw-rich-text-editor li.ProseMirror-selectednode::after {
+  content: "";
+  position: absolute;
+  inset: -2px -2px -2px -32px;
+  border: 2px solid var(--gw-rich-text-selection-color, #8cf);
+  pointer-events: none;
+}
+
+.gw-rich-text-editor img.ProseMirror-separator {
+  display: inline !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+.gw-rich-text-editor[data-placeholder]::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--gw-rich-text-placeholder-color, #9ca3af);
+  pointer-events: none;
+}
+
+.gw-rich-text-editor .upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: var(--gw-rich-text-placeholder-color, #9ca3af);
+  background: var(--gw-rich-text-upload-placeholder-background, #f3f4f6);
+  pointer-events: none;
+}

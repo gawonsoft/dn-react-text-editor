@@ -35,7 +35,7 @@ export function createEditorPlugins({
 /** Returns the editor DOM attributes derived from presentation-only options. */
 export function createEditorAttributes(props: TextEditorControllerProps) {
   return {
-    class: props.className || "",
+    class: ["gw-rich-text-editor", props.className].filter(Boolean).join(" "),
     spellcheck: "false",
     style: props.style || "width: 100%; height: inherit; outline: none;",
   };

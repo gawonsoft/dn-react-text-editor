@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.4 - 2026-07-31
+
+### Fixed
+
+- Added automatic baseline styles for text and upload placeholders so
+  consumers no longer need to declare required placeholder CSS.
+- Added scoped ProseMirror editing, selection, list, and separator styles that
+  are required for consistent editor behavior.
+
+### Added
+
+- Added placeholder color and upload background CSS variables for application
+  theme overrides.
+- Added a CSS variable for the selected-node outline color.
+- Added a `gw-rich-text-editor/unstyled` entrypoint for consumers that want to
+  own every editor style, plus an explicit `gw-rich-text-editor/styles.css`
+  export for manual stylesheet loading.
+
 ## 0.1.3 - 2026-07-31
 
 ### Fixed
