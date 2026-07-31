@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.3 - 2026-07-31
+
+### Fixed
+
+- Prevented a deferred editor cleanup from disposing the active ProseMirror
+  view when React replays layout effects during client-side navigation.
+
 ## 0.1.2 - 2026-07-31
 
 ### Fixed

@@ -54,6 +54,7 @@ export function TextEditor({
   const initialDefaultValue = useRef(defaultValue);
   const latestValue = useRef(value);
   const controllerRef = useRef<TextEditorController>(null);
+  const bindingVersionRef = useRef(0);
 
   if (!controllerRef.current) {
     controllerRef.current = new TextEditorController({
@@ -87,6 +88,7 @@ export function TextEditor({
       return;
     }
 
+    const bindingVersion = ++bindingVersionRef.current;
     controller.bind(container);
 
     if (
@@ -99,8 +101,14 @@ export function TextEditor({
     return () => {
       if (controller.isBound) {
         // Atomic node views own nested React roots. Release them after the
-        // parent root finishes its current cleanup lifecycle.
-        queueMicrotask(() => controller.dispose());
+        // parent root finishes its current cleanup lifecycle. React may replay
+        // layout effects without unmounting the component, so a newer binding
+        // invalidates the deferred cleanup from the previous effect.
+        queueMicrotask(() => {
+          if (bindingVersionRef.current === bindingVersion) {
+            controller.dispose();
+          }
+        });
       }
     };
   }, [controller]);

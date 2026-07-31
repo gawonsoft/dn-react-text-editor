@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { act } from "react";
+import { act, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TextEditor } from "../src/text_editor";
@@ -45,6 +45,32 @@ describe("TextEditor", () => {
       root.unmount();
       await Promise.resolve();
     });
+  });
+
+  it("keeps the editor bound when React replays layout effects", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+
+    await act(async () => {
+      root.render(
+        <StrictMode>
+          <TextEditor defaultValue="<p>Client navigation</p>" />
+        </StrictMode>,
+      );
+      await Promise.resolve();
+    });
+
+    expect(host.querySelector(".ProseMirror")?.textContent).toBe(
+      "Client navigation",
+    );
+
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
+
+    expect(host.querySelector(".ProseMirror")).toBeNull();
   });
 
   it("applies controlled value changes inside React effects without nesting a flush", async () => {
