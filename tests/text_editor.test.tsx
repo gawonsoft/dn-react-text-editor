@@ -3,6 +3,7 @@
 import { act, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { RichTextEditor } from "../src/rich_text_editor";
 import { TextEditor } from "../src/text_editor";
 
 const reactEnvironment = globalThis as typeof globalThis & {
@@ -119,6 +120,25 @@ describe("TextEditor", () => {
       "Controlled value",
     );
     expect(consoleError).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+      await Promise.resolve();
+    });
+  });
+
+  it("adds the rich schema through the preset component", async () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+
+    await act(async () => {
+      root.render(
+        <RichTextEditor defaultValue="<h2><strong>Rich value</strong></h2>" />,
+      );
+    });
+
+    expect(host.querySelector("h2 strong")?.textContent).toBe("Rich value");
 
     await act(async () => {
       root.unmount();

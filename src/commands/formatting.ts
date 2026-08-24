@@ -1,17 +1,18 @@
 import * as commands from "prosemirror-commands";
-import type { EditorView } from "prosemirror-view";
+import type { Attrs } from "prosemirror-model";
+import type { Command, EditorState } from "prosemirror-state";
 
 export type Alignment = "left" | "center" | "right" | "justify";
 
 function isActiveBlock(
-  view: EditorView,
+  state: EditorState,
   nodeName: string,
   attrs?: Record<string, unknown>,
 ) {
-  const { $from, $to } = view.state.selection;
+  const { $from, $to } = state.selection;
   let active = false;
 
-  view.state.doc.nodesBetween($from.pos, $to.pos, (node) => {
+  state.doc.nodesBetween($from.pos, $to.pos, (node) => {
     if (node.type.name !== nodeName) {
       return;
     }
@@ -27,49 +28,75 @@ function isActiveBlock(
   return active;
 }
 
-/** Toggles an inline mark on the current selection. */
-export function toggleMark(
-  view: EditorView,
-  markName: "bold" | "italic" | "underline",
-) {
-  view.focus();
-  commands.toggleMark(view.state.schema.marks[markName])(
-    view.state,
-    view.dispatch,
-  );
+/** Creates a command that toggles a registered inline mark. */
+export function toggleEditorMark(
+  markName: string,
+  attrs?: Attrs | null,
+): Command {
+  return (state, dispatch, view) => {
+    const mark = state.schema.marks[markName];
+
+    if (!mark) {
+      return false;
+    }
+
+    view?.focus();
+    return commands.toggleMark(mark, attrs)(state, dispatch, view);
+  };
 }
 
+/** Toggles the built-in bold mark when it is registered. */
+export const toggleBold = toggleEditorMark("bold");
+
+/** Toggles the built-in italic mark when it is registered. */
+export const toggleItalic = toggleEditorMark("italic");
+
+/** Toggles the built-in underline mark when it is registered. */
+export const toggleUnderline = toggleEditorMark("underline");
+
 /** Toggles a heading level, restoring a paragraph when it is already active. */
-export function toggleHeading(view: EditorView, level: 1 | 2 | 3 | 4 | 5 | 6) {
-  view.focus();
-  const heading = view.state.schema.nodes.heading;
+export function toggleHeading(
+  level: 1 | 2 | 3 | 4 | 5 | 6,
+): Command {
+  return (state, dispatch, view) => {
+    const heading = state.schema.nodes.heading;
+    const paragraph = state.schema.nodes.paragraph;
 
-  if (isActiveBlock(view, "heading", { level })) {
-    commands.setBlockType(view.state.schema.nodes.paragraph)(
-      view.state,
-      view.dispatch,
-    );
-    return;
-  }
+    if (!heading || !paragraph) {
+      return false;
+    }
 
-  commands.setBlockType(heading, { level })(view.state, view.dispatch);
+    view?.focus();
+
+    if (isActiveBlock(state, "heading", { level })) {
+      return commands.setBlockType(paragraph)(state, dispatch, view);
+    }
+
+    return commands.setBlockType(heading, { level })(state, dispatch, view);
+  };
 }
 
 /** Toggles alignment on the current paragraph or heading. */
-export function toggleAlignment(view: EditorView, align: Alignment) {
-  view.focus();
-  const { $from } = view.state.selection;
-  const node = $from.node();
+export function toggleAlignment(align: Alignment): Command {
+  return (state, dispatch, view) => {
+    const { $from } = state.selection;
+    const node = $from.node();
 
-  if (!["paragraph", "heading"].includes(node.type.name)) {
-    return;
-  }
+    if (!["paragraph", "heading"].includes(node.type.name)) {
+      return false;
+    }
 
-  view.dispatch(
-    view.state.tr.setNodeAttribute(
-      $from.before(),
-      "align",
-      node.attrs.align === align ? null : align,
-    ),
-  );
+    if (dispatch) {
+      view?.focus();
+      dispatch(
+        state.tr.setNodeAttribute(
+          $from.before(),
+          "align",
+          node.attrs.align === align ? null : align,
+        ),
+      );
+    }
+
+    return true;
+  };
 }

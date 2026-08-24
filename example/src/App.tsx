@@ -1,7 +1,16 @@
 import {
+  attachFiles,
+  clear,
   defineEditorElement,
-  TextEditor,
-  TextEditorController,
+  link,
+  redo,
+  RichTextEditor,
+  setCodeBlock,
+  toggleBulletList,
+  toggleHeading,
+  toggleOrderedList,
+  undo,
+  type TextEditorController,
 } from "gw-rich-text-editor";
 import { TextEditorView } from "gw-rich-text-editor/view";
 import { useRef, useState, type RefObject } from "react";
@@ -17,19 +26,21 @@ export default function App() {
     <div>
       <Toolbar controller={controllerRef} />
       <div className="app">
-        <TextEditor
+        <RichTextEditor
           ref={controllerRef}
           className="text-editor"
           placeholder="Start typings..."
           defaultValue={initialValue}
           nodes={[fileElement]}
-          upload={{
-            async upload(file, { onProgress }) {
-              onProgress(100);
-              return fileElement.create({
-                href: URL.createObjectURL(file),
-                name: file.name,
-              });
+          fileAttachments={{
+            upload: {
+              async upload(file, { onProgress }) {
+                onProgress(100);
+                return fileElement.create({
+                  href: URL.createObjectURL(file),
+                  name: file.name,
+                });
+              },
             },
           }}
           onChange={setContent}
@@ -75,19 +86,28 @@ function Toolbar({
 
   return (
     <div className="toolbar">
-      <button type="button" onClick={() => controller.current?.commands.undo()}>
+      <button
+        type="button"
+        onClick={() => controller.current?.execute(undo)}
+      >
         Undo
       </button>
-      <button type="button" onClick={() => controller.current?.commands.redo()}>
+      <button
+        type="button"
+        onClick={() => controller.current?.execute(redo)}
+      >
         Redo
       </button>
       <button
         type="button"
-        onClick={() => controller.current?.commands.clear()}
+        onClick={() => controller.current?.execute(clear)}
       >
         Clear
       </button>
-      <button type="button" onClick={() => controller.current?.commands.link()}>
+      <button
+        type="button"
+        onClick={() => controller.current?.execute(link())}
+      >
         Link
       </button>
       <button type="button" onClick={() => inputRef.current?.click()}>
@@ -98,7 +118,9 @@ function Toolbar({
         type="file"
         accept="*/*"
         onChange={(e) => {
-          controller.current?.attachFile(Array.from(e.target.files || []));
+          controller.current?.execute(
+            attachFiles(Array.from(e.target.files || [])),
+          );
           e.target.value = "";
         }}
         style={{
@@ -107,25 +129,25 @@ function Toolbar({
       />
       <button
         type="button"
-        onClick={() => controller.current?.commands.heading(1)}
+        onClick={() => controller.current?.execute(toggleHeading(1))}
       >
         H1
       </button>
       <button
         type="button"
-        onClick={() => controller.current?.commands.orderedList()}
+        onClick={() => controller.current?.execute(toggleOrderedList)}
       >
         Ordered List
       </button>
       <button
         type="button"
-        onClick={() => controller.current?.commands.bulletList()}
+        onClick={() => controller.current?.execute(toggleBulletList)}
       >
         Bullet List
       </button>
       <button
         type="button"
-        onClick={() => controller.current?.commands.codeBlock()}
+        onClick={() => controller.current?.execute(setCodeBlock)}
       >
         Code Block
       </button>

@@ -1,11 +1,17 @@
 /** @vitest-environment jsdom */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  defaultEditorNodes,
   defineEditorContainer,
   defineEditorElement,
   defineEditorMark,
+  resolveEditorNodes,
 } from "../src/elements";
+import {
+  attachFiles,
+  fileAttachmentPlugin,
+} from "../src/plugins/file_attachment";
 import { TextEditorController } from "../src/text_editor_controller";
 
 const fileElement = defineEditorElement({
@@ -38,24 +44,39 @@ const fileElement = defineEditorElement({
 
 describe("registered editor elements", () => {
   it("inserts and serializes an uploaded custom file element", async () => {
+    let uploadedWidth: number | undefined;
     const controller = new TextEditorController({
-      nodes: [fileElement],
-      upload: {
-        async upload(_file, { onProgress }) {
-          onProgress(100);
-          return fileElement.create({
-            href: "https://storage.example.com/report.pdf",
-            name: "report.pdf",
-            size: 1024,
-          });
-        },
-      },
+      nodes: resolveEditorNodes([fileElement], defaultEditorNodes),
+      plugins: [
+        fileAttachmentPlugin({
+          upload: {
+            async getMetadata() {
+              return { width: 320 };
+            },
+            async upload(_file, { metadata, onProgress }) {
+              uploadedWidth = metadata.width;
+              onProgress(100);
+              return fileElement.create({
+                href: "https://storage.example.com/report.pdf",
+                name: "report.pdf",
+                size: 1024,
+              });
+            },
+          },
+        }),
+      ],
     });
     controller.bind(document.createElement("div"));
 
-    await controller.attachFile([
-      new File(["report"], "report.pdf", { type: "application/pdf" }),
-    ]);
+    controller.execute(
+      attachFiles([
+        new File(["report"], "report.pdf", { type: "application/pdf" }),
+      ]),
+    );
+    await vi.waitFor(() => {
+      expect(controller.value).toContain('data-editor-element="file"');
+    });
+    expect(uploadedWidth).toBe(320);
 
     expect(controller.value).toContain('data-editor-element="file"');
     expect(controller.value).toContain('<a ');
@@ -74,7 +95,7 @@ describe("registered editor elements", () => {
     );
 
     const restored = new TextEditorController({
-      nodes: [fileElement],
+      nodes: resolveEditorNodes([fileElement], defaultEditorNodes),
       defaultValue: controller.value,
     });
     restored.bind(document.createElement("div"));

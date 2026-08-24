@@ -1,14 +1,14 @@
 import { redo as redoHistory, undo as undoHistory } from "prosemirror-history";
-import type { EditorView } from "prosemirror-view";
+import type { Command } from "prosemirror-state";
 
 /** Applies the latest undoable editor transaction. */
-export function undo(view: EditorView) {
-  view.focus();
-  undoHistory(view.state, view.dispatch);
-}
+export const undo: Command = (state, dispatch, view) => {
+  view?.focus();
+  return undoHistory(state, dispatch, view);
+};
 
 /** Reapplies the latest undone editor transaction. */
-export function redo(view: EditorView) {
-  view.focus();
-  redoHistory(view.state, view.dispatch);
-}
+export const redo: Command = (state, dispatch, view) => {
+  view?.focus();
+  return redoHistory(state, dispatch, view);
+};

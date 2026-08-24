@@ -17,13 +17,13 @@ application.
 
 ```tsx
 import { useState } from "react";
-import { TextEditor } from "gw-rich-text-editor";
+import { RichTextEditor } from "gw-rich-text-editor";
 
 export function ArticleEditor() {
   const [value, setValue] = useState("<p>Hello world!</p>");
 
   return (
-    <TextEditor
+    <RichTextEditor
       name="content"
       value={value}
       placeholder="Write something..."
@@ -46,7 +46,9 @@ owns surface sizing and decoration:
 
 ## Component API
 
-`TextEditor` accepts normal `div` attributes in addition to these props.
+`TextEditor` is a minimal paragraph editor. `RichTextEditor` adds the built-in
+headings, lists, media, marks, history, keymap, and file-attachment plugin.
+Both accept normal `div` attributes in addition to these props.
 
 | Prop                | Type                                 | Description                                                          |
 | ------------------- | ------------------------------------ | -------------------------------------------------------------------- |
@@ -57,11 +59,13 @@ owns surface sizing and decoration:
 | `placeholder`       | `string`                             | Empty-editor placeholder text.                                       |
 | `onValueChange`     | `(change: TextEditorChange) => void` | Read-only event with a `user`, `external`, or `command` origin.      |
 | `onChangeDelay`     | `number`                             | Delay in milliseconds before change callbacks run.                   |
-| `historyGroupDelay` | `number`                             | History grouping delay, independent from `onChangeDelay`.            |
 | `nodes`             | `EditorNode[]`                       | Adds or overrides atomic and container nodes by `type`.              |
 | `marks`             | `EditorMark[]`                       | Adds or overrides inline text marks by `type`.                       |
-| `upload`            | `UploadAdapter`                      | Storage integration with cancellation, progress, and error handling. |
+| `plugins`           | `Plugin[]`                           | Adds native ProseMirror plugins to this editor.                       |
 | `editorStyle`       | `string`                             | Inline CSS applied to the ProseMirror editor element.                |
+
+`RichTextEditor` also accepts `history` and `fileAttachments`. Set either to
+`false` to omit that preset feature, or pass its options object to configure it.
 
 Controlled `value` updates are safe from React effects; consumers do not need
 to defer them with a timer or microtask. Container and mark render callbacks
@@ -115,75 +119,91 @@ import "gw-rich-text-editor/styles.css";
 Do not combine that explicit stylesheet import with the default styled
 entrypoint, because the default entrypoint already injects the same rules.
 
-Use `ref` to access the editor's value, uploads, and simple formatting commands.
+Use `ref` to access the editor value and execute typed commands.
 
 ## Toolbar Commands
 
-Call methods on `editorRef.current?.commands`. Each command uses the editor's
-current selection and restores focus before changing formatting.
+Pass exported commands to `editorRef.current?.execute()`. Each command uses the
+editor's current selection and restores focus before changing formatting.
 
 ```tsx
 import { useRef } from "react";
-import { TextEditor, TextEditorController } from "gw-rich-text-editor";
+import {
+  RichTextEditor,
+  toggleBold,
+  toggleBulletList,
+  toggleHeading,
+  type TextEditorController,
+} from "gw-rich-text-editor";
 
 export function EditorWithToolbar() {
   const editorRef = useRef<TextEditorController>(null);
 
   return (
     <>
-      <button type="button" onClick={() => editorRef.current?.commands.bold()}>
+      <button
+        type="button"
+        onClick={() => editorRef.current?.execute(toggleBold)}
+      >
         Bold
       </button>
       <button
         type="button"
-        onClick={() => editorRef.current?.commands.heading(2)}
+        onClick={() => editorRef.current?.execute(toggleHeading(2))}
       >
         Heading 2
       </button>
       <button
         type="button"
-        onClick={() => editorRef.current?.commands.bulletList()}
+        onClick={() => editorRef.current?.execute(toggleBulletList)}
       >
         Bullet list
       </button>
-      <TextEditor ref={editorRef} defaultValue="<p>Select some text.</p>" />
+      <RichTextEditor
+        ref={editorRef}
+        defaultValue="<p>Select some text.</p>"
+      />
     </>
   );
 }
 ```
 
-`commands` provides these methods:
+The package exports these commands and command factories:
 
-| Method                              | Purpose                                                   |
-| ----------------------------------- | --------------------------------------------------------- |
-| `undo()`, `redo()`                  | Move through editor history.                              |
-| `clear()`                           | Replace the document with an empty paragraph.             |
-| `bold()`, `italic()`, `underline()` | Toggle inline formatting at the selection.                |
-| `heading(level)`                    | Toggle a heading at levels 1 through 6.                   |
-| `bulletList()`, `orderedList()`     | Wrap the selection in a list.                             |
-| `codeBlock()`                       | Convert the current block to a code block.                |
-| `align("center")`                   | Toggle `left`, `center`, `right`, or `justify` alignment. |
-| `link(url?)`                        | Apply a link; omit the URL to use the browser prompt.     |
+| Command                                                   | Purpose                                                   |
+| --------------------------------------------------------- | --------------------------------------------------------- |
+| `undo`, `redo`                                            | Move through editor history.                              |
+| `clear`                                                   | Replace the document with an empty paragraph.             |
+| `toggleBold`, `toggleItalic`, `toggleUnderline`           | Toggle built-in inline formatting.                        |
+| `toggleHeading(level)`                                    | Toggle a heading at levels 1 through 6.                   |
+| `toggleBulletList`, `toggleOrderedList`                   | Wrap the selection in a list.                             |
+| `setCodeBlock`                                            | Convert the current block to a code block.                |
+| `toggleAlignment("center")`                              | Toggle `left`, `center`, `right`, or `justify` alignment. |
+| `link(url?)`                                              | Apply a link; omit the URL to use the browser prompt.     |
+| `toggleEditorMark(name, attrs?)`                          | Toggle a registered custom mark.                          |
+| `setBlockType(name, attrs?)`, `toggleBlockType(name, …)`  | Format with a registered custom text block.               |
+| `wrapInNode(name, attrs?)`                                | Wrap the selection in a registered container.             |
 
 ### Attach Files
 
-Call `editorRef.current?.attachFile()` with browser `File` objects to insert
-images or videos at the current selection. The default uploader embeds data
-URLs; use the [`upload`](#file-uploads) prop for production storage or custom
-file elements.
+Execute `attachFiles()` with browser `File` objects to insert images or videos
+at the current selection. The rich preset embeds data URLs by default; use
+`fileAttachments.upload` for production storage or custom file elements.
 
 ```tsx
-function attachFiles(files: FileList | null) {
+import { attachFiles } from "gw-rich-text-editor";
+
+function handleFiles(files: FileList | null) {
   if (!files || !editorRef.current) {
     return;
   }
 
-  editorRef.current.attachFile(Array.from(files));
+  editorRef.current.execute(attachFiles(Array.from(files)));
 }
 ```
 
-Call `editorRef.current.cancelUploads()` to abort all in-flight uploads, for
-example when closing an editor modal.
+Execute `cancelFileAttachments` to abort all in-flight uploads, for example when
+closing an editor modal.
 
 ## File Uploads
 
@@ -192,26 +212,28 @@ uploader returns a value created by a registered element. For the default image
 element, pass every declared attribute:
 
 ```tsx
-<TextEditor
-  upload={{
-    async upload(file, { signal, onProgress }) {
-      const response = await uploadToStorage(file);
-      onProgress(100);
-      return imageElement.create({
-        src: response.url,
-        alt: file.name,
-        title: null,
-        width: null,
-        height: null,
-        srcSet: null,
-        sizes: null,
-      });
-    },
-    async getMetadata(file, signal) {
-      return readMediaDimensions(file);
-    },
-    onError(error, file) {
-      reportUploadError(error, file);
+<RichTextEditor
+  fileAttachments={{
+    upload: {
+      async upload(file, { signal, metadata, onProgress }) {
+        const response = await uploadToStorage(file, signal);
+        onProgress(100);
+        return imageElement.create({
+          src: response.url,
+          alt: file.name,
+          title: null,
+          width: metadata.width ?? null,
+          height: metadata.height ?? null,
+          srcSet: null,
+          sizes: null,
+        });
+      },
+      async getMetadata(file, signal) {
+        return readMediaDimensions(file, signal);
+      },
+      onError(error, file) {
+        reportUploadError(error, file);
+      },
     },
   }}
 />
@@ -236,7 +258,7 @@ import {
   defineEditorContainer,
   defineEditorMark,
   imageElement,
-  TextEditor,
+  RichTextEditor,
 } from "gw-rich-text-editor";
 import { TextEditorView } from "gw-rich-text-editor/view";
 
@@ -299,18 +321,20 @@ const highlightMark = defineEditorMark({
   ),
 });
 
-<TextEditor
+<RichTextEditor
   nodes={[fileElement, calloutNode]}
   marks={[highlightMark]}
-  upload={{
-    async upload(file, { onProgress }) {
-      const stored = await uploadToStorage(file);
-      onProgress(100);
-      return fileElement.create({
-        href: stored.url,
-        name: file.name,
-        size: file.size,
-      });
+  fileAttachments={{
+    upload: {
+      async upload(file, { signal, onProgress }) {
+        const stored = await uploadToStorage(file, signal);
+        onProgress(100);
+        return fileElement.create({
+          href: stored.url,
+          name: file.name,
+          size: file.size,
+        });
+      },
     },
   }}
 />;
@@ -321,6 +345,8 @@ const highlightMark = defineEditorMark({
 Call `controller.insertElement(fileElement.create(...))` to insert a registered
 atomic node without an upload. Container and mark renderers receive a
 package-managed `Content` slot; do not replace it with manually rendered text.
+Use `toggleEditorMark`, `setBlockType`, `toggleBlockType`, and `wrapInNode` to
+connect registered marks and containers to application-owned toolbar buttons.
 The HTML `download` attribute only guarantees a
 download for same-origin or Blob URLs; configure `Content-Disposition:
 attachment` on cross-origin storage URLs when a download must be forced.

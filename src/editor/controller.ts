@@ -1,4 +1,5 @@
 import { DOMParser, DOMSerializer } from "prosemirror-model";
+import type { Command } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import {
   editorChangeOriginKey,
@@ -6,7 +7,6 @@ import {
   type TextEditorChange,
 } from "../events";
 import { createSchema } from "../schema";
-import { TextEditorTool } from "../tools";
 import {
   resolveEditorMarks,
   resolveEditorNodes,
@@ -23,7 +23,6 @@ import {
 import { createEditorAttributes } from "./plugins";
 import { dispatchEditorTransaction } from "./changes";
 import type { TextEditorControllerProps } from "./types";
-import { attachFiles, cancelTrackedUploads } from "./uploads";
 import { insertEditorElement } from "./element_actions";
 import { createEditorView } from "./view";
 /** Owns one stable ProseMirror view and exposes only high-level editor operations. */
@@ -34,12 +33,9 @@ export class TextEditorController {
   readonly #parser;
   readonly #serializer;
   readonly #listeners = new Set<(change: TextEditorChange) => void>();
-  readonly #uploads = new Set<AbortController>();
   #props: TextEditorControllerProps;
   #view?: EditorView;
   #nextOrigin?: EditorChangeOrigin;
-  /** Provides simple imperative formatting commands for this editor. */
-  readonly commands: TextEditorTool;
   /** Creates a controller whose schema remains the single source of truth. */
   constructor(props: TextEditorControllerProps = {}) {
     this.#props = props;
@@ -48,7 +44,6 @@ export class TextEditorController {
     this.#schema = createSchema(this.#nodes, this.#marks);
     this.#parser = DOMParser.fromSchema(this.#schema);
     this.#serializer = DOMSerializer.fromSchema(this.#schema);
-    this.commands = new TextEditorTool(this);
   }
   /** Reports whether the controller currently owns a mounted editor view. */
   get isBound() {
@@ -106,31 +101,25 @@ export class TextEditorController {
     );
   }
 
-  /** Queues media uploads and keeps cancellation handles until they complete. */
-  async attachFile(files: File[], pos?: number) {
-    await attachFiles({
-      schema: this.#schema,
-      view: this.getView(),
-      files,
-      pos,
-      uploads: this.#uploads,
-      upload: this.#props.upload,
-      onError: this.#props.onUploadError,
-    });
-  }
-
   /** Inserts a value created by a registered high-level editor element. */
   insertElement(value: EditorElementValue) {
-    this.runCommand(() =>
+    this.runAsCommand(() =>
       insertEditorElement(this.getView(), this.#schema, value),
     );
   }
-  /** Cancels every in-flight media upload owned by this editor. */
-  cancelUploads() {
-    cancelTrackedUploads(this.#uploads);
+
+  /** Runs a native ProseMirror command against the mounted editor view. */
+  execute(command: Command) {
+    let result = false;
+    this.runAsCommand(() => {
+      const view = this.getView();
+      result = command(view.state, view.dispatch, view);
+    });
+    return result;
   }
-  /** Runs an imperative command and labels its document change as a command event. */
-  runCommand(callback: () => void) {
+
+  /** Labels synchronous transactions produced by an imperative API as commands. */
+  private runAsCommand(callback: () => void) {
     this.#nextOrigin = "command";
     try {
       callback();
@@ -152,7 +141,6 @@ export class TextEditorController {
       props: this.#props,
       nodes: this.#nodes,
       marks: this.#marks,
-      attachFile: (_view, files, pos) => this.attachFile(files, pos),
       dispatchTransaction: (transaction) =>
         this.dispatchTransaction(transaction),
     });
@@ -180,9 +168,8 @@ export class TextEditorController {
     return serializeText(this.getView());
   }
 
-  /** Destroys the view, aborts pending uploads, and releases subscribers. */
+  /** Destroys the view and releases subscribers and plugin-owned resources. */
   dispose() {
-    this.cancelUploads();
     this.#view?.destroy();
     this.#view = undefined;
     this.#listeners.clear();

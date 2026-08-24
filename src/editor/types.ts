@@ -1,20 +1,19 @@
 import type { EditorMark, EditorNode } from "../elements";
-import type { UploadAdapter } from "../upload";
+import type { Plugin } from "prosemirror-state";
 
 /** Configuration accepted by the high-level text editor controller. */
 export type TextEditorControllerProps = {
   mode?: "html" | "text";
   defaultValue?: string;
   onChangeDelay?: number;
-  historyGroupDelay?: number;
   placeholder?: string;
   autoFocus?: boolean;
   className?: string;
   style?: string;
-  /** Registered atomic and container nodes. A matching type overrides its built-in node. */
+  /** Nodes added to the minimal paragraph schema. A matching type overrides it. */
   nodes?: readonly EditorNode[];
-  /** Registered inline marks. A matching type overrides its built-in mark. */
+  /** Inline marks registered with this editor. The minimal editor has none. */
   marks?: readonly EditorMark[];
-  upload?: UploadAdapter;
-  onUploadError?: (error: unknown, file: File) => void;
+  /** Native ProseMirror plugins installed before the package's base keymap. */
+  plugins?: readonly Plugin[];
 };

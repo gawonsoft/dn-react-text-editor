@@ -2,7 +2,6 @@ import type { DOMParser, Schema } from "prosemirror-model";
 import { EditorState, type Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { EditorMark, EditorNode } from "../elements";
-import type { AttachFile } from "../attach_file";
 import { parseEditorValue } from "./document";
 import { createElementNodeViews } from "./element_views";
 import { createEditorMarkViews } from "./mark_views";
@@ -17,7 +16,6 @@ export function createEditorView({
   props,
   nodes,
   marks,
-  attachFile,
   dispatchTransaction,
 }: {
   mount: HTMLElement;
@@ -26,7 +24,6 @@ export function createEditorView({
   props: TextEditorControllerProps;
   nodes: readonly EditorNode[];
   marks: readonly EditorMark[];
-  attachFile: AttachFile;
   dispatchTransaction: (transaction: Transaction) => void;
 }) {
   return new EditorView(
@@ -38,7 +35,7 @@ export function createEditorView({
       state: EditorState.create({
         schema,
         doc: parseEditorValue(parser, props.defaultValue || "", props.mode),
-        plugins: createEditorPlugins({ schema, props, attachFile }),
+        plugins: createEditorPlugins({ props }),
       }),
       dispatchTransaction,
     },

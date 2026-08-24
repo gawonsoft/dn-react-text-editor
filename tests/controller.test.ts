@@ -1,11 +1,27 @@
 /** @vitest-environment jsdom */
 
 import { describe, expect, it } from "vitest";
+import { history } from "prosemirror-history";
+import { clear } from "../src/commands";
+import { defaultEditorMarks, defaultEditorNodes } from "../src/elements";
+import {
+  attachFiles,
+  cancelFileAttachments,
+  fileAttachmentPlugin,
+} from "../src/plugins/file_attachment";
 import { TextEditorController } from "../src/text_editor_controller";
 
-function createController(defaultValue = "<p>Initial</p>") {
+function createRichController(
+  defaultValue = "<p>Initial</p>",
+  fileAttachments = {},
+) {
   const container = document.createElement("div");
-  const controller = new TextEditorController({ defaultValue });
+  const controller = new TextEditorController({
+    defaultValue,
+    nodes: defaultEditorNodes,
+    marks: defaultEditorMarks,
+    plugins: [history(), fileAttachmentPlugin(fileAttachments)],
+  });
   controller.bind(container);
 
   return controller;
@@ -13,13 +29,13 @@ function createController(defaultValue = "<p>Initial</p>") {
 
 describe("TextEditorController", () => {
   it("keeps one mounted view and labels external and command changes", () => {
-    const controller = createController();
+    const controller = createRichController();
     const changes: string[] = [];
     controller.subscribe((change) => changes.push(change.origin));
 
     controller.bind(document.createElement("div"));
     controller.value = "<p>External</p>";
-    controller.commands.clear();
+    controller.execute(clear);
 
     expect(changes).toEqual(["external", "command"]);
     expect(controller.value).toBe("<p></p>");
@@ -27,7 +43,7 @@ describe("TextEditorController", () => {
 
   it("cancels active upload adapters", async () => {
     let aborted = false;
-    const controller = new TextEditorController({
+    const controller = createRichController("<p></p>", {
       upload: {
         upload: (_file, { signal }) =>
           new Promise((_, reject) => {
@@ -38,19 +54,21 @@ describe("TextEditorController", () => {
           }),
       },
     });
-    controller.bind(document.createElement("div"));
 
-    const upload = controller.attachFile([
-      new File(["image"], "image.png", { type: "image/png" }),
-    ]);
-    controller.cancelUploads();
-    await upload;
+    controller.execute(
+      attachFiles([
+        new File(["image"], "image.png", { type: "image/png" }),
+      ]),
+    );
+    await Promise.resolve();
+    controller.execute(cancelFileAttachments);
+    await Promise.resolve();
 
     expect(aborted).toBe(true);
   });
 
   it("serializes the same React trees used by default nodes and marks", () => {
-    const controller = createController(
+    const controller = createRichController(
       '<h2 style="text-align: center">Title</h2><ul><li><p><strong>One</strong></p></li></ul><pre><code>const value = 1;</code></pre>',
     );
 
@@ -66,7 +84,7 @@ describe("TextEditorController", () => {
   });
 
   it("does not serialize React image preload hints as editor content", () => {
-    const controller = createController(
+    const controller = createRichController(
       '<img src="https://cdn.example.com/image.png" alt="Example">',
     );
 
@@ -78,9 +96,8 @@ describe("TextEditorController", () => {
 
   it("updates rendered container attributes without replacing contentDOM", () => {
     const container = document.createElement("div");
-    const controller = new TextEditorController({
-      defaultValue: "<h2>Title</h2>",
-    });
+    const controller = createRichController("<h2>Title</h2>");
+    controller.dispose();
     controller.bind(container);
     const heading = container.querySelector("h2");
     const view = controller.getView();

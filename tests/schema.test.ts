@@ -2,6 +2,7 @@
 
 import { DOMParser as ProseMirrorDOMParser } from "prosemirror-model";
 import { describe, expect, it } from "vitest";
+import { defaultEditorMarks, defaultEditorNodes } from "../src/elements";
 import { createSchema } from "../src/schema";
 
 /** Parses markup with the package schema for HTML round-trip assertions. */
@@ -9,7 +10,9 @@ function parseHTML(html: string) {
   const container = document.createElement("div");
   container.innerHTML = html;
 
-  return ProseMirrorDOMParser.fromSchema(createSchema()).parse(container);
+  return ProseMirrorDOMParser.fromSchema(
+    createSchema(defaultEditorNodes, defaultEditorMarks),
+  ).parse(container);
 }
 
 describe("createSchema", () => {

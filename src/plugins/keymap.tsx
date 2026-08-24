@@ -1,11 +1,10 @@
 import { TextSelection, type Command } from "prosemirror-state";
 import { undo, redo } from "prosemirror-history";
 import { chainCommands, splitBlockAs } from "prosemirror-commands";
-import type { Schema } from "prosemirror-model";
 import { splitListItem } from "prosemirror-schema-list";
 
 /** Builds editor key bindings for history, block navigation, lists, and code blocks. */
-export function buildKeymap(schema: Schema) {
+export function buildKeymap() {
   const keys: Record<string, Command> = {};
 
   /** Registers a ProseMirror command under a platform-aware key binding. */
@@ -28,6 +27,10 @@ export function buildKeymap(schema: Schema) {
     if (lastNode && lastNode.type.name !== "paragraph") {
       const paragraphType = state.schema.nodes.paragraph;
 
+      if (!paragraphType) {
+        return false;
+      }
+
       let tr = state.tr;
 
       const endPos = doc.content.size;
@@ -46,17 +49,23 @@ export function buildKeymap(schema: Schema) {
     return false;
   });
 
-  const li = schema.nodes.list_item;
-
   bind(
     "Enter",
     chainCommands(
-      splitListItem(li),
+      (state, dispatch, view) => {
+        const listItem = state.schema.nodes.list_item;
+        return listItem
+          ? splitListItem(listItem)(state, dispatch, view)
+          : false;
+      },
       (state, dispatch) => {
         // Split a regular paragraph after list-item handling has declined.
         const { $head } = state.selection;
 
-        if ($head.parent.type === state.schema.nodes.paragraph) {
+        if (
+          state.schema.nodes.paragraph &&
+          $head.parent.type === state.schema.nodes.paragraph
+        ) {
           splitBlockAs((n) => {
             return {
               type: n.type,
@@ -73,6 +82,10 @@ export function buildKeymap(schema: Schema) {
         // Preserve the current leading whitespace when adding a code-block line.
         const { selection } = state;
         const { $from, $to } = selection;
+
+        if ($from.parent.type !== state.schema.nodes.code_block) {
+          return false;
+        }
 
         const lines = state.doc
           .textBetween($from.before(), $to.pos)
@@ -99,7 +112,10 @@ export function buildKeymap(schema: Schema) {
     const { selection } = state;
     const { $from, $to } = selection;
 
-    if ($from.parent.type === schema.nodes.code_block) {
+    if (
+      state.schema.nodes.code_block &&
+      $from.parent.type === state.schema.nodes.code_block
+    ) {
       if (dispatch) {
         dispatch(state.tr.insertText("  ", $from.pos, $to.pos));
       }

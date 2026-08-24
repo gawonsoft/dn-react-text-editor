@@ -11,6 +11,7 @@ export type MediaMetadata = {
 export type UploadContext = {
   signal: AbortSignal;
   onProgress: (progress: number) => void;
+  metadata: MediaMetadata;
 };
 
 /** Integrates a storage service with a registered editor element upload flow. */

@@ -12,6 +12,7 @@ export {
   videoElement,
 } from "./builtins";
 export {
+  baseEditorNodes,
   defaultEditorNodes,
   resolveEditorMarks,
   resolveEditorNodes,

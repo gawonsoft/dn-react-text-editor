@@ -88,6 +88,7 @@ export function createAttachFile({
       const result = upload
         ? await upload.upload(file, {
             signal,
+            metadata,
             onProgress(progress) {
               view.dispatch(
                 view.state.tr.setMeta(uploadPlaceholderPlugin, {

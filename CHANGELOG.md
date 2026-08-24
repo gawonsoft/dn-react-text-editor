@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.0 - 2026-08-24
+
+### Added
+
+- Added the `RichTextEditor` preset for the built-in rich schema, history,
+  keymap, and optional file attachments.
+- Added `TextEditorController.execute()` and exported native commands for
+  built-in and consumer-defined marks, text blocks, and container nodes.
+- Added public file-attachment plugin, attach, and cancellation commands.
+- Added extracted media metadata to `UploadContext` so upload adapters can
+  preserve dimensions and poster URLs on inserted nodes.
+
+### Changed
+
+- Made `TextEditor` a minimal paragraph editor whose nodes, marks, and plugins
+  are explicitly composed by consumers or presets.
+- Moved upload configuration to `RichTextEditor.fileAttachments` and history
+  configuration to `RichTextEditor.history`.
+
+### Removed
+
+- Removed the controller `commands`, `attachFile()`, and `cancelUploads()`
+  facades in favor of `execute()` and exported commands.
+- Removed the `upload`, `onUploadError`, and `historyGroupDelay` props from the
+  minimal `TextEditor` component.
+
 ## 0.1.4 - 2026-07-31
 
 ### Fixed
