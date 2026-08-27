@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.2 - 2026-08-27
+
+### Added
+
+- Added a visible default color and underline for links inside the editable
+  surface, with `--gw-rich-text-link-color` available for theme overrides.
+
 ## 0.2.1 - 2026-08-27
 
 ### Fixed

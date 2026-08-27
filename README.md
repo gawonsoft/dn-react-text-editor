@@ -84,6 +84,7 @@ only needs a different theme:
   --gw-rich-text-placeholder-color: #64748b;
   --gw-rich-text-upload-placeholder-background: #f1f5f9;
   --gw-rich-text-selection-color: #60a5fa;
+  --gw-rich-text-link-color: #1d4ed8;
 }
 ```
 
