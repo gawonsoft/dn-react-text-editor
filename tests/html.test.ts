@@ -38,4 +38,17 @@ describe("TextEditorView", () => {
     expect(container.querySelector("code img")).toBeNull();
     root.unmount();
   });
+
+  it("preserves blank link targets and hardens their relationship", () => {
+    const { container, root } = renderValue(
+      '<p><a href="https://example.com" target="_blank">External</a></p>',
+    );
+    const link = container.querySelector("a");
+
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")?.split(" ")).toEqual(
+      expect.arrayContaining(["noopener", "noreferrer"]),
+    );
+    root.unmount();
+  });
 });

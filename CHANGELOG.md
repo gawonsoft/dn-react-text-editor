@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.2.1 - 2026-08-27
+
+### Fixed
+
+- Preserved `target="_blank"` on sanitized links while enforcing
+  `rel="noopener noreferrer"` in the read-only view.
+
 ## 0.2.0 - 2026-08-24
 
 ### Added

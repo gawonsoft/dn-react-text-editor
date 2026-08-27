@@ -10,6 +10,7 @@ const sanitizerOptions = {
     "playsinline",
     "poster",
     "referrerpolicy",
+    "target",
   ],
   ADD_DATA_URI_TAGS: ["video"],
 };
